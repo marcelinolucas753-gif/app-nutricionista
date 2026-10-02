@@ -1,5 +1,19 @@
 $ErrorActionPreference = 'Stop'
-$env:PORT = '4173'
+$envFile = Join-Path $PSScriptRoot '.env'
+if (-not (Test-Path -LiteralPath $envFile)) {
+    Write-Host 'Falta el archivo .env. Copiá .env.example como .env y seguí los pasos de “Probar en una computadora” en README.md.' -ForegroundColor Yellow
+    exit 1
+}
+foreach ($line in Get-Content -LiteralPath $envFile) {
+    if ($line -match '^\s*#' -or $line -notmatch '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$') { continue }
+    $keyName = $Matches[1]
+    $keyValue = $Matches[2].Trim().Trim('"').Trim("'")
+    if ($keyValue) { [Environment]::SetEnvironmentVariable($keyName, $keyValue, 'Process') }
+}
+if (-not $env:DATABASE_URL) {
+    Write-Host 'La base de datos todavía no está configurada. Seguí los pasos de puesta en marcha del README.md.' -ForegroundColor Yellow
+    exit 1
+}
 $nodeCommand = Get-Command node.exe -ErrorAction SilentlyContinue
 $nodePath = if ($nodeCommand) { $nodeCommand.Source } else { $null }
 if (-not $nodePath) {
@@ -17,19 +31,13 @@ if (-not $nodePath) {
     Write-Host 'Instalá Node.js desde https://nodejs.org/ y después volvé a abrir iniciar-app.bat.'
     exit 1
 }
-$secureKey = Read-Host 'Clave de OpenAI API (Enter para abrir sin generacion de menus)' -AsSecureString
-if ($secureKey.Length -gt 0) {
-    $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureKey)
-    try { $env:OPENAI_API_KEY = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr) }
-    finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) }
-}
 Write-Host ''
 Write-Host 'Iniciando Nutri Guia Clinica. No cierres esta ventana mientras uses la app.' -ForegroundColor Green
 $browserJob = Start-Job -ArgumentList 'http://localhost:4173' -ScriptBlock {
     param($url)
     for ($attempt = 0; $attempt -lt 40; $attempt++) {
         try {
-            $response = Invoke-WebRequest -Uri $url -TimeoutSec 1
+            $response = Invoke-WebRequest -Uri 'http://localhost:4173/api/health' -TimeoutSec 1
             if ($response.StatusCode -eq 200) { Start-Process $url; break }
         } catch { }
         Start-Sleep -Milliseconds 250

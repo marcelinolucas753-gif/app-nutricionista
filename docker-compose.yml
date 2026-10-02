@@ -1,0 +1,15 @@
+services:
+  database:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nutri_guia
+      POSTGRES_USER: nutri_app
+      POSTGRES_PASSWORD: nutri_app_local
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - nutri_guia_data:/var/lib/postgresql/data
+
+volumes:
+  nutri_guia_data:

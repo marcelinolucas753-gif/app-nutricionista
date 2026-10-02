@@ -1,4 +1,4 @@
-const CACHE = "nutri-guia-v8";
+const CACHE = "nutri-guia-v9";
 self.addEventListener("install", event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(["/", "/styles.css", "/app.js", "/nutrition.mjs", "/manifest.webmanifest", "/icon.svg", "/icon-192.png", "/icon-512.png"]))));
 self.addEventListener("activate", event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key))))));
 self.addEventListener("fetch", event => {

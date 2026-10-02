@@ -1,66 +1,73 @@
 # Nutri Guía Clínica
 
-Aplicación web instalable para organizar fichas y crear borradores de menús semanales para revisión clínica. Está escrita en español y pensada para prácticas en Resistencia, Chaco.
+Aplicación web en español para que profesionales de nutrición organicen pacientes, consultas, mediciones, agenda y borradores de alimentación.
 
-## Abrir en Windows
+## Qué incorpora esta versión
 
-1. Hacé doble clic en **iniciar-app.bat**.
-2. El iniciador buscará Node.js automáticamente. Si ya tenés una clave de OpenAI API, pegala cuando la ventana la pida. La clave no se guarda en un archivo y solo se mantiene mientras esa ventana esté abierta. Si presionás Enter sin escribir una clave, podés explorar la app y guardar fichas, pero no generar menús con IA.
-3. Se abrirá la app en el navegador. Para detenerla, cerrá la ventana negra.
+- Acceso individual por profesional: cada cuenta ve únicamente sus fichas. Los datos se sincronizan entre dispositivos mediante una base PostgreSQL central.
+- Respaldo automático diario cifrado. Se conservan los últimos 14 respaldos diarios y uno por semana durante 8 semanas. La clave de cifrado es irremplazable: guardala aparte y con acceso restringido.
+- Asistente para resumir consultas y preparar preguntas de seguimiento.
+- Reemplazo de una comida puntual sin regenerar el resto del menú, recetas con medidas caseras y sugerencias de sustitución.
+- Todo lo creado con IA queda como propuesta para revisión. El PDF para pacientes solo se habilita después de aprobar el plan. Luego lo descargás y elegís por qué medio compartirlo.
+- Ningún alimento se excluye de forma automática. La IA considera las alergias, intolerancias y preferencias anotadas en esa ficha. Revisá etiquetas y contaminación cruzada cuando corresponda.
+- Los menús usan medidas caseras y evitan cantidades en gramos por ingrediente. La estimación Harris-Benedict y la distribución 60% carbohidratos, 25% grasas y 15% proteínas continúan siendo referencias para revisión profesional.
 
-Si el iniciador dice que no encuentra Node.js, instalalo desde [nodejs.org](https://nodejs.org/) y volvé a abrir **iniciar-app.bat**.
+## Probar en una computadora
 
-La API de OpenAI requiere una clave y puede tener cargos propios de uso. El acceso a ChatGPT no configura automáticamente una clave para esta aplicación. La app usa GPT-6 Luna por defecto para reducir el costo de generación; en un alojamiento propio, un administrador puede elegir otro modelo mediante la configuración `OPENAI_MODEL`.
+La aplicación requiere Node.js 20.6 o posterior, npm y Docker Desktop para iniciar una base local de prueba.
 
-El botón **Guardar o imprimir PDF** prepara la descarga con el formato semanal compartido por Lucas, sus recomendaciones, el recetario complementario y la selección de alimentos. El menú conserva las ideas generadas y los cambios editados en la ficha. El texto de la interfaz también se amplió para facilitar la lectura.
+1. Copiá `.env.example` como `.env`. Abrilo y reemplazá `BACKUP_ENCRYPTION_KEY` por una clave propia de 64 caracteres hexadecimales. Podés generar una con Node: `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`.
+2. Instalá los componentes necesarios con `npm install`.
+3. Iniciá la base de prueba con `docker compose up -d`.
+4. En PowerShell, desde esta carpeta, ejecutá `node --env-file=.env migrate.mjs`.
+5. Creá una cuenta profesional: `node --env-file=.env manage-users.mjs create correo@ejemplo.com "Nombre Profesional"`. Copiá la contraseña temporal que aparece y guardala en un lugar privado. Después podés cambiarla desde la app.
+6. Iniciá la aplicación con `iniciar-app.bat` e ingresá con ese correo y contraseña.
+7. Para activar las funciones de IA, cargá una clave de OpenAI en `OPENAI_API_KEY` dentro de `.env` y reiniciá la aplicación. La clave de API puede tener costos propios; no es la contraseña de ChatGPT.
 
-La ficha ahora permite buscar pacientes por nombre, objetivo o identificador interno, archivar y reactivar registros, llevar un historial de consultas y guardar mediciones de peso, talla y perímetros. Podés cargar las mediciones iniciales al crear la ficha y registrar las nuevas junto con cada consulta. El IMC se calcula cuando hay peso y talla y se muestra como un dato descriptivo, no como diagnóstico. Al crear un menú nuevo se conserva el borrador anterior para poder restaurarlo. Desde **Mis pacientes** también se pueden descargar e importar respaldos JSON; la importación suma fichas nuevas y no reemplaza las existentes.
+Para agregar otros profesionales, repetí el paso 5 con su correo y nombre. Para restablecer una contraseña: `node --env-file=.env manage-users.mjs reset-password correo@ejemplo.com`. Para recuperar datos: `node --env-file=.env restore-backup.mjs ruta/al/respaldo.enc`; escribí `RESTAURAR` cuando lo pida. Antes de restaurar se crea un respaldo cifrado de seguridad.
 
-Si la app muestra un error al generar, cerrá la ventana negra y volvé a iniciar **iniciar-app.bat** para cargar la versión actualizada. Si el mensaje menciona saldo, facturación o límites, revisá el uso y la facturación de la API en la cuenta y el proyecto asociados a la clave; comprar crédito no corrige un error de lectura de la respuesta como el que ya fue corregido en esta versión.
+Las credenciales de PostgreSQL incluidas en `docker-compose.yml` son solo para la base local de prueba. No las reutilices para publicar la aplicación.
 
-## Cálculo de requerimientos para el menú
+## Publicar y usar desde varios dispositivos
 
-El cálculo usa la ecuación revisada de Harris-Benedict de Roza y Shizgal (1984). Se aplica a personas adultas y requiere edad, peso, talla y una categoría de fórmula femenina o masculina. Las ecuaciones usan kg, cm y años:
+La aplicación está preparada para ejecutarse en un servidor Node.js con una base PostgreSQL accesible, conexión HTTPS, almacenamiento persistente para los archivos de respaldo y acceso limitado a las claves. La separación de fichas se aplica dentro de la base de datos y se verifica también con políticas de seguridad de PostgreSQL. La app no crea por sí sola el servicio de alojamiento ni la base remota; antes de cargar datos reales, un administrador debe configurarlos y comprobarlos.
 
-- Categoría masculina: 88,362 + (13,397 × peso) + (4,799 × talla) − (5,677 × edad).
-- Categoría femenina: 447,593 + (9,247 × peso) + (3,098 × talla) − (4,330 × edad).
+Configuración necesaria en el servidor: `NODE_ENV=production`, `DATABASE_URL`, `BACKUP_ENCRYPTION_KEY`, `BACKUP_DIR` persistente y, para IA, `OPENAI_API_KEY`. Configurá HTTPS en el servicio que publica la app. Guardá una copia protegida de la clave de respaldo fuera del servidor: sin ella no es posible recuperar los archivos cifrados. Probá restaurar los respaldos antes de usar el sistema con información real.
 
-La aplicación multiplica el resultado en reposo por un factor de actividad seleccionado por el profesional: 1,2; 1,375; 1,55; 1,725 o 1,9. Es una forma aproximada de estimar el gasto diario; esos factores son estimaciones separadas de Harris-Benedict. El objetivo del menú parte del gasto diario y permite un ajuste manual profesional. La app no decide por sí sola un déficit o superávit según el objetivo escrito en la ficha.
+La base mantiene datos separados por cuenta profesional dentro del mismo servicio PostgreSQL. No se crea una instancia física distinta para cada profesional.
 
-La referencia de macronutrientes queda fijada en 60% de carbohidratos, 25% de grasas y 15% de proteínas. Estos porcentajes están dentro de los rangos de distribución para adultos publicados por las National Academies, pero no necesariamente son adecuados para cada situación clínica. La IA recibe el objetivo energético estimado y esos porcentajes; redacta medidas caseras, sin gramos por alimento, calorías ni porcentajes en el menú. El peso, la talla, la categoría usada en la ecuación y el factor de actividad permanecen en este dispositivo.
+## Privacidad y uso de IA
 
-Harris-Benedict es una predicción, no una medición: la publicación informa una precisión del 14% en personas con estado nutricional normal y advierte que no es fiable en desnutrición. Revisá el resultado profesionalmente; la app no aplica esta estimación para embarazo, enfermedad aguda o menores.
+- La app requiere una cuenta para abrir fichas. Las contraseñas se almacenan como verificaciones criptográficas; las sesiones vencen a las 12 horas.
+- El profesional debe contar con autorización para cada paciente antes de usar cualquier función de IA. La autorización actualizada cubre menús, resúmenes de consulta, reemplazos, recetas y sustituciones.
+- Se envía a OpenAI solo el contexto necesario para la función solicitada. El nombre y el correo del paciente no se agregan al contexto; evitá escribir datos identificatorios dentro de las observaciones clínicas.
+- Cada respuesta de IA es una propuesta. La revisión profesional, las alergias, medicación y necesidades individuales deben comprobarse antes de compartir.
+- Compartir no envía correos ni mensajes automáticamente. La función prepara la impresión o el guardado como PDF; el profesional elige el medio.
+- Un cambio de datos desde otro dispositivo se detecta para evitar reemplazar silenciosamente una versión más reciente.
 
-Fuentes: [Roza y Shizgal (1984), artículo sobre Harris-Benedict](https://pubmed.ncbi.nlm.nih.gov/6741850/); [National Academies, rangos de distribución de macronutrientes](https://www.nationalacademies.org/index.php/cdn/materials/9fb9fae6-337c-4b7c-9821-2c81d1f65ad0).
-## Instalarla en un celular
+## Migrar fichas que estaban en este navegador
 
-Este archivo ZIP contiene la aplicación lista para publicarse y probarse. Para que Android o iPhone la instalen como app hace falta primero publicarla en una dirección web HTTPS. Abrir el ZIP o el archivo HTML directamente en el teléfono no instala una PWA y tampoco habilita la generación de menús.
+Al iniciar sesión, si la app encuentra fichas antiguas guardadas en ese navegador, preguntará si querés agregarlas a la cuenta actual. La importación es opcional y suma registros sin reemplazar fichas existentes. Si otro profesional usa ese mismo navegador, elegí **No** para no pasarle esos datos.
 
-Cuando tengas una dirección HTTPS:
+También podés descargar e importar un respaldo JSON desde **Mis pacientes**. Los respaldos contienen información de salud: mantenelos en un lugar privado.
 
-- **Android:** abrí el enlace en Chrome y tocá **Instalar app**. También podés usar el menú ⋮ y elegir **Instalar app** o **Añadir a pantalla de inicio**.
-- **iPhone:** abrí el enlace en Safari, tocá **Compartir** y elegí **Agregar a pantalla de inicio**.
+## Cálculo energético
 
-El servicio donde publiques la app deberá ejecutar Node.js 20 o posterior y tener estos secretos: `NODE_ENV=production`, `OPENAI_API_KEY` y una `APP_PASSWORD` privada de al menos 16 caracteres. El acceso con contraseña caduca a las 12 horas. No pegues claves en el navegador, en este ZIP ni en mensajes. Antes de usar datos de pacientes, revisá que el alojamiento sea adecuado para información de salud y esté configurado para no registrar los cuerpos de las solicitudes. El servidor y su proveedor procesan las solicitudes antes de enviarlas a OpenAI. El navegador del celular guardará sus propias fichas localmente; no se sincronizan con la computadora.
+La estimación utiliza la ecuación revisada Harris-Benedict de Roza y Shizgal (1984), para personas adultas con edad, peso, talla y categoría de fórmula disponibles. El factor de actividad se aplica como aproximación separada. No es un diagnóstico ni una medición del gasto; el profesional debe revisar supuestos y pertinencia. La app no aplica la estimación automáticamente a menores, embarazo o enfermedad aguda.
 
-## Datos y privacidad
+La distribución de macronutrientes se fija en 60% carbohidratos, 25% grasas y 15% proteínas como orientación solicitada. Puede no ser adecuada para todos los casos.
 
-- Las fichas y los borradores se guardan en el almacenamiento local del navegador de cada dispositivo. No hay cuenta ni sincronización.
-- Al pedir un menú, el servidor recibe edad, condición de salud, objetivo, gustos, restricciones, presupuesto, rutina y, si está calculado, el gasto diario y la distribución objetivo de macros. El peso, la talla, la categoría de la ecuación, el nombre y otros datos de identificación no se envían. El servidor reenvía el contexto mínimo a OpenAI para preparar la respuesta.
-- Podés guardar una ficha sin permiso para usar IA; antes de cada caso nuevo la app requiere registrar que la persona fue informada y autorizó ese uso. Revisá las reglas de privacidad de tu institución, el consentimiento apropiado y las condiciones actuales del alojamiento y del proveedor antes de usar datos reales.
-- No se incluyen menores, diagnósticos automáticos ni ajustes de medicamentos. La estimación energética y la distribución de macros son ayudas editables para revisión profesional; no interpretan resultados.
-- El borrador es una ayuda educativa, no una indicación clínica lista para entregar. Revisalo con el profesional supervisor, especialmente si hay alergias, comorbilidades, tratamiento u otras necesidades que exceden el alcance inicial.
+Fuentes: [Roza y Shizgal (1984), Harris-Benedict revisada](https://pubmed.ncbi.nlm.nih.gov/6741850/); [National Academies, rangos de macronutrientes](https://www.nationalacademies.org/index.php/cdn/materials/9fb9fae6-337c-4b7c-9821-2c81d1f65ad0).
 
-## Respaldo
+## Instalar en un celular
 
-Las fichas pertenecen al almacenamiento del navegador y podrían perderse si se borra ese almacenamiento, se cambia de navegador o se cambia de teléfono. Por privacidad, esta primera versión no sincroniza ni hace copias en la nube. Evitá cargar datos identificables y protegé el acceso al dispositivo.
+Primero debe publicarse en una dirección HTTPS. Android: abrí el enlace en Chrome y elegí **Instalar app**. iPhone: abrilo en Safari, tocá **Compartir** y elegí **Agregar a pantalla de inicio**.
 
-## Agenda y seguimiento
+## Desarrollo y mantenimiento
 
-La agenda permite organizar turnos en vista diaria, semanal o mensual, asociarlos a una ficha, editar fecha y duración, cambiar su estado y cancelarlos con confirmación. Se previenen las superposiciones de horarios entre turnos activos. Los turnos se guardan localmente en el navegador y se incluyen en los respaldos nuevos. No se envían avisos por email, WhatsApp ni SMS; la app muestra turnos próximos en el inicio. El tablero también señala controles vencidos y fichas sin consultas registradas.
-
-El servidor ahora publica `GET /api/health` para comprobar que está activo. Se aplican límites por dirección de red a los intentos de inicio de sesión y generación de menús; estos límites se reinician al reiniciar el servidor. La agenda, las fichas y sus permisos todavía no están sincronizados entre profesionales ni entre dispositivos.
-
-## Desarrollo
-
-Requiere Node.js 20 o posterior. Desde esta carpeta ejecutá `node server.mjs` y abrí `http://localhost:4173`. La clave se recibe como `OPENAI_API_KEY` en el entorno del servidor y nunca se incluye en JavaScript del navegador.
+- `node --env-file=.env migrate.mjs`: crea las tablas y políticas de seguridad.
+- `node --env-file=.env manage-users.mjs create correo@ejemplo.com "Nombre"`: crea un profesional.
+- `node --env-file=.env manage-users.mjs reset-password correo@ejemplo.com`: restablece una contraseña y cierra sus sesiones activas.
+- `node --env-file=.env restore-backup.mjs ruta/al/respaldo.enc`: restaura un respaldo cifrado previa confirmación.
+- `GET /api/health`: informa si la base está disponible, sin exponer información de las fichas.
+- Las consultas y guardados deben seguir usando HTTPS y no registrar los cuerpos de solicitudes, que pueden contener datos de salud.
