@@ -393,5 +393,5 @@ signoutButton.addEventListener("click", async () => { clearTimeout(saveTimer); i
 changePasswordButton.addEventListener("click", async () => { const currentPassword=window.prompt("Ingresá tu contraseña actual:"); if(currentPassword===null)return; const newPassword=window.prompt("Ingresá una contraseña nueva de al menos 12 caracteres:"); if(newPassword===null)return; try{const response=await fetch("/api/change-password",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({currentPassword,newPassword})});const result=await response.json();if(!response.ok)throw new Error(result.error);toast("Contraseña actualizada.");}catch(error){toast(error.message||"No se pudo cambiar la contraseña.");} });
 refreshAuth();
 setInterval(checkForRemoteChanges,30_000);
-if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
+if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js?v=10").catch(() => {}));
 updateCounts();
