@@ -28,7 +28,9 @@
   body *{visibility:hidden!important}
   #page-detail,#print-plan,#print-plan *{visibility:visible!important}
   #page-detail{display:block!important;position:absolute!important;inset:0!important;width:100%!important;margin:0!important;padding:0!important;max-width:none!important}
-  #page-detail>*:not(#print-plan){display:none!important}
+  #page-detail>*:not(#plans-panel){display:none!important}
+  #plans-panel{display:block!important;visibility:visible!important;position:static!important;width:100%!important;margin:0!important;padding:0!important}
+  #plans-panel>*:not(#print-plan){display:none!important}
   #print-plan{display:block!important;position:static!important;width:100%!important;margin:0!important;padding:0!important}
   .print-document{font:10pt/1.35 'DM Sans',Arial,sans-serif;color:#26372e}
   .print-header{margin-bottom:5mm}.print-brand{display:flex;align-items:center;gap:8px;color:#176b53;margin-bottom:5mm}.print-brand-mark{width:11mm;height:11mm;display:grid;place-items:center;border-radius:3mm;background:#176b53;color:#fff;font-size:16pt;font-weight:700}.print-brand strong{display:block;font:700 15pt Manrope,Arial,sans-serif}.print-brand small{display:block;font-size:7.5pt;letter-spacing:1pt;color:#809087;margin-top:1mm}.print-header h1{font:700 22pt Manrope,Arial,sans-serif;color:#24372f;margin:0 0 2mm}.print-meta{font-size:10pt;line-height:1.5;color:#53675c;margin:0 0 3mm}.print-intro{padding:3mm 4mm;border-left:3px solid #85b395;background:#f2f6ef;border-radius:2mm;color:#53675c;margin:0}
