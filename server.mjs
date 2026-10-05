@@ -30,6 +30,13 @@ function rateAllowed(key, limit, windowMs) {
   bucket.count += 1; return true;
 }
 function clientIp(req) { return req.socket.remoteAddress || "unknown"; }
+function portalClientKey(req) { const forwarded = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim(); return forwarded || req.socket.remoteAddress || "unknown"; }
+function failuresBlocked(key, limit) { const bucket = rateBuckets.get(key); return Boolean(bucket && bucket.expiresAt > Date.now() && bucket.count >= limit); }
+function recordFailure(key, windowMs) {
+  const now = Date.now(); const bucket = rateBuckets.get(key);
+  if (!bucket || bucket.expiresAt <= now) rateBuckets.set(key, { startedAt: now, expiresAt: now + windowMs, count: 1 }); else bucket.count += 1;
+}
+const PORTAL_WINDOW_MS = 15 * 60 * 1000;
 function digest(token) { return createHash("sha256").update(token).digest("hex"); }
 function sessionCookie(token, maxAge) { return `nutri_session=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${production ? "; Secure" : ""}`; }
 function json(res, status, body, headers = {}) { res.writeHead(status, { "Content-Type": "application/json; charset=utf-8", ...headers }); res.end(JSON.stringify(body)); }
@@ -213,8 +220,31 @@ const server = createServer(async (req, res) => {
   if (pathname === "/api/data" && req.method === "GET") {
     const user = await requireSession(req, res); if (!user) return;
     try {
-      const result = await withProfessional(user.id, client => client.query("SELECT document,version,updated_at FROM professional_data WHERE professional_id=$1", [user.id]));
-      const row = result.rows[0]; json(res, 200, { ...(row?.document || { patients: [], appointments: [] }), version: Number(row?.version || 0), updatedAt: row?.updated_at || null });
+      const result = await withProfessional(user.id, async client => {
+         const r1 = await client.query("SELECT document,version,updated_at FROM professional_data WHERE professional_id=$1", [user.id]);
+         const r2 = await client.query(`
+           SELECT t.patient_id, s.type, s.data, s.created_at
+           FROM patient_submissions s
+           JOIN patient_access_tokens t ON s.access_token_id = t.id
+           WHERE t.professional_id = $1
+           ORDER BY s.created_at DESC
+         `, [user.id]);
+         return { data: r1.rows[0], submissions: r2.rows };
+      });
+      const row = result.data;
+      const document = row?.document || { patients: [], appointments: [] };
+      for (const sub of result.submissions) {
+        const patient = document.patients.find(p => p.id === sub.patient_id);
+        if (patient) {
+          patient.submissions = patient.submissions || [];
+          patient.submissions.push({
+            type: sub.type,
+            data: sub.data,
+            createdAt: sub.created_at
+          });
+        }
+      }
+      json(res, 200, { ...document, version: Number(row?.version || 0), updatedAt: row?.updated_at || null });
     } catch { json(res, 503, { error: "No se pudo cargar la base de datos de tu cuenta." }); }
     return;
   }
@@ -280,6 +310,115 @@ const server = createServer(async (req, res) => {
     } catch (error) { json(res, error.status || 500, { error: error.message || "No se pudo completar la propuesta." }); }
     return;
   }
+  if (pathname === "/api/patient-access" && req.method === "POST") {
+    const user = await requireSession(req, res); if (!user) return;
+    try {
+      const body = await readJson(req, 4000); const patientId = typeof body.patientId === "string" ? body.patientId : "";
+      if (!patientId) throw fail("Falta el ID del paciente.");
+      const token = randomBytes(32).toString("base64url"); const tokenHash = digest(token);
+      let shortCode = "";
+      for (let i = 0; i < 5; i++) {
+        shortCode = randomBytes(4).toString("hex").slice(0, 6).toUpperCase();
+        try {
+          await pool.query("INSERT INTO patient_access_tokens (professional_id, patient_id, token_hash, short_code) VALUES ($1, $2, $3, $4)", [user.id, patientId, tokenHash, shortCode]);
+          break;
+        } catch (err) { if (err.code !== '23505' || i === 4) throw err; }
+      }
+      json(res, 200, { ok: true, token, shortCode });
+    } catch (error) { json(res, error.status || 500, { error: error.message || "No se pudo generar el acceso." }); }
+    return;
+  }
+  if (pathname.startsWith("/api/patient-access/") && req.method === "GET") {
+    const user = await requireSession(req, res); if (!user) return;
+    try {
+      const patientId = pathname.split("/").pop();
+      const result = await pool.query("SELECT short_code FROM patient_access_tokens WHERE professional_id=$1 AND patient_id=$2 AND active=true AND (revoked_at IS NULL)", [user.id, patientId]);
+      if (result.rows.length === 0) json(res, 200, { active: false });
+      else json(res, 200, { active: true, shortCode: result.rows[0].short_code });
+    } catch (error) { json(res, 500, { error: "No se pudo obtener el acceso." }); }
+    return;
+  }
+  if (pathname.startsWith("/api/patient-access/") && req.method === "DELETE") {
+    const user = await requireSession(req, res); if (!user) return;
+    try {
+      const patientId = pathname.split("/").pop();
+      await pool.query("UPDATE patient_access_tokens SET active=false, revoked_at=now() WHERE professional_id=$1 AND patient_id=$2 AND active=true", [user.id, patientId]);
+      json(res, 200, { ok: true });
+    } catch (error) { json(res, 500, { error: "No se pudo revocar el acceso." }); }
+    return;
+  }
+  if (pathname === "/api/portal/auth" && req.method === "POST") {
+    try {
+      const body = await readJson(req, 1000);
+      const code = typeof body.code === "string" ? body.code.trim().toUpperCase() : "";
+      const ipKey = `portal-fail:${portalClientKey(req)}`; const globalKey = "portal-fail:all";
+      if (failuresBlocked(ipKey, 10) || failuresBlocked(globalKey, 100)) throw fail("Demasiados intentos con códigos incorrectos. Esperá 15 minutos y volvé a intentar.", 429);
+      if (!code) throw fail("Código no válido.", 401);
+      const result = await pool.query("SELECT token_hash FROM patient_access_tokens WHERE short_code=$1 AND active=true", [code]);
+      if (result.rows.length === 0) { recordFailure(ipKey, PORTAL_WINDOW_MS); recordFailure(globalKey, PORTAL_WINDOW_MS); throw fail("El código no es válido o fue revocado.", 401); }
+      json(res, 200, { ok: true, token: result.rows[0].token_hash }); // In a real app we'd sign a JWT or set a cookie. We'll use localstorage in the client.
+    } catch (error) { json(res, error.status || 500, { error: error.message || "No se pudo acceder." }); }
+    return;
+  }
+  if (pathname === "/api/portal/data" && req.method === "GET") {
+    try {
+      const raw = req.headers.authorization?.replace("Bearer ", "");
+      const isHash = req.headers["x-is-hash"] === "true";
+      const tokenHash = isHash ? raw : (raw ? digest(raw) : null);
+      if (!tokenHash) throw fail("No autorizado", 401);
+      const accessResult = await pool.query("SELECT id, professional_id, patient_id FROM patient_access_tokens WHERE token_hash=$1 AND active=true", [tokenHash]);
+      if (accessResult.rows.length === 0) throw fail("Enlace no válido o revocado.", 401);
+      const { id: tokenId, professional_id: profId, patient_id: patientId } = accessResult.rows[0];
+      const dataResult = await withProfessional(profId, client => client.query("SELECT document FROM professional_data WHERE professional_id=$1", [profId]));
+      const profResult = await pool.query("SELECT display_name FROM professionals WHERE id=$1", [profId]);
+      const patient = dataResult.rows[0]?.document?.patients?.find(p => p.id === patientId);
+      if (!patient) throw fail("Paciente no encontrado", 404);
+      const appointments = dataResult.rows[0]?.document?.appointments?.filter(a => a.patientId === patientId && new Date(a.start) >= new Date() && !["cancelled", "noShow"].includes(a.status)) || [];
+      const nextAppointment = appointments.sort((a, b) => a.start.localeCompare(b.start))[0] || null;
+      
+      const portalData = {
+        professionalName: profResult.rows[0]?.display_name,
+        patientName: patient.name,
+        draft: patient.approvedAt ? patient.draft : null,
+        consultations: (patient.consultations || []).map(c => ({ date: c.date })).sort((a,b) => String(b.date).localeCompare(String(a.date))),
+        measurements: (patient.measurements || []).map(m => ({ date: m.date, weight: m.weight, height: m.height })).sort((a,b) => String(b.date).localeCompare(String(a.date))),
+        recipes: patient.approvedAt ? (patient.recipes || []) : [],
+        nextAppointment: nextAppointment ? nextAppointment.start : null
+      };
+      json(res, 200, portalData);
+    } catch (error) { json(res, error.status || 500, { error: error.message || "No se pudo cargar los datos." }); }
+    return;
+  }
+  if ((pathname === "/api/portal/weight" || pathname === "/api/portal/note") && req.method === "POST") {
+    try {
+      const raw = req.headers.authorization?.replace("Bearer ", "");
+      const isHash = req.headers["x-is-hash"] === "true";
+      const tokenHash = isHash ? raw : (raw ? digest(raw) : null);
+      if (!tokenHash) throw fail("No autorizado", 401);
+      const accessResult = await pool.query("SELECT id FROM patient_access_tokens WHERE token_hash=$1 AND active=true", [tokenHash]);
+      if (accessResult.rows.length === 0) throw fail("No autorizado", 401);
+      
+      const body = await readJson(req, 2000);
+      const type = pathname.endsWith("weight") ? "weight" : "note";
+      await pool.query("INSERT INTO patient_submissions (access_token_id, type, data) VALUES ($1, $2, $3::jsonb)", [accessResult.rows[0].id, type, JSON.stringify(body)]);
+      json(res, 200, { ok: true });
+    } catch (error) { json(res, error.status || 500, { error: error.message || "No se pudo guardar." }); }
+    return;
+  }
+
+  // To allow serving index.html for /portal paths to support client-side routing
+  if (req.method === "GET" && (pathname === "/portal" || pathname.startsWith("/portal/"))) {
+    try {
+      const data = await readFile(normalize(join(root, "portal.html")));
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      res.end(data);
+    } catch {
+      res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+      res.end("No encontramos ese archivo.");
+    }
+    return;
+  }
+
   if (req.method !== "GET" && req.method !== "HEAD") { res.writeHead(405); res.end(); return; }
   let staticPath; try { staticPath = decodeURIComponent(pathname); } catch { res.writeHead(400); res.end(); return; }
   if (staticPath === "/") staticPath = "/index.html";

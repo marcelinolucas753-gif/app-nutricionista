@@ -43,5 +43,9 @@ $browserJob = Start-Job -ArgumentList 'http://localhost:4173' -ScriptBlock {
         Start-Sleep -Milliseconds 250
     }
 }
-try { & $nodePath (Join-Path $PSScriptRoot 'server.mjs') }
+try { 
+    Write-Host 'Aplicando actualizaciones en la base de datos...'
+    & $nodePath (Join-Path $PSScriptRoot 'migrate.mjs')
+    & $nodePath (Join-Path $PSScriptRoot 'server.mjs') 
+}
 finally { Stop-Job $browserJob -ErrorAction SilentlyContinue; Remove-Job $browserJob -Force -ErrorAction SilentlyContinue }
