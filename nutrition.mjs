@@ -38,6 +38,54 @@ export function calculateHarrisBenedict({ age, weightKg, heightCm, equationSex }
   return Math.round(basalKcal);
 }
 
+/**
+ * Reparto orientativo de kcal por comida (suma 100%). Es una distribución
+ * convencional, no una indicación clínica; el profesional puede ajustarla
+ * cambiando el objetivo energético desde la ficha.
+ */
+const MEAL_SLOT_SHARE = { breakfast: 0.20, snack1: 0.05, lunch: 0.30, merienda: 0.10, snack2: 0.05, dinner: 0.30 };
+const MEAL_SLOT_LABELS = {
+  breakfast: "Desayuno", snack1: "Colación de la mañana", lunch: "Almuerzo",
+  merienda: "Merienda", snack2: "Colación de la tarde", dinner: "Cena"
+};
+const MAIN_MEAL_KEYS = ["breakfast", "lunch", "dinner"];
+
+function portionTierForMainMeal(kcal) {
+  if (kcal < 350) return { tier: "liviano", hint: "plato chico: la porción principal del tamaño de una mano ahuecada, más una porción chica de proteína" };
+  if (kcal < 550) return { tier: "moderado", hint: "plato mediano (de unos 23 cm): una porción de proteína del tamaño de la palma de la mano, un puño de carbohidrato y vegetales a voluntad" };
+  if (kcal < 750) return { tier: "abundante", hint: "plato grande: una porción de proteína del tamaño de la palma y un puño y medio de carbohidrato, más vegetales" };
+  return { tier: "amplio", hint: "plato grande con un acompañamiento extra, por ejemplo una porción adicional de legumbre, cereal o pan" };
+}
+function portionTierForSnack(kcal) {
+  if (kcal < 120) return { tier: "muy liviana", hint: "una fruta chica, o una infusión sola" };
+  if (kcal < 220) return { tier: "liviana", hint: "una fruta mediana, o un yogur chico" };
+  if (kcal < 320) return { tier: "moderada", hint: "un yogur con cereal, o una fruta con un puñado chico de frutos secos" };
+  return { tier: "abundante", hint: "un sándwich chico, o una fruta con un puñado grande de frutos secos" };
+}
+
+/**
+ * Traduce el objetivo energético en un tamaño de porción orientativo por
+ * comida, en medidas caseras. Es una regla fija (no depende de que la IA
+ * "adivine" el tamaño): la IA solo elige los alimentos; el tamaño de la
+ * porción lo decide esta función a partir de las kcal del paciente.
+ */
+export function derivePortionGuidance(requirements) {
+  if (!requirements?.dailyEnergyKcal) return null;
+  const total = requirements.dailyEnergyKcal;
+  const perSlot = {};
+  for (const key of Object.keys(MEAL_SLOT_SHARE)) {
+    const kcal = Math.round(total * MEAL_SLOT_SHARE[key]);
+    const tierInfo = MAIN_MEAL_KEYS.includes(key) ? portionTierForMainMeal(kcal) : portionTierForSnack(kcal);
+    perSlot[key] = { label: MEAL_SLOT_LABELS[key], approxShareKcal: kcal, tier: tierInfo.tier, hint: tierInfo.hint };
+  }
+  const proteinPercent = Number(requirements.macroDistribution?.proteinPercent) || 0;
+  const proteinEmphasis = proteinPercent >= 20
+    ? "El objetivo tiene énfasis en proteínas: priorizá una porción de proteína (carne, pollo, pescado, huevo, legumbres) bien presente en cada comida principal."
+    : null;
+  const overallTier = perSlot.lunch?.tier || perSlot.dinner?.tier || "moderado";
+  return { perSlot, proteinEmphasis, overallTier };
+}
+
 export function calculatePatientRequirements(person) {
   const context = `${person?.condition || ""} ${person?.goal || ""} ${person?.context || ""}`;
   if (/\b(embarazad[oa]s?|embarazo|gestaci[oó]n|lactancia|desnutrici[oó]n|desnutrid[oa]s?|enfermedad aguda)\b/i.test(context)) return null;

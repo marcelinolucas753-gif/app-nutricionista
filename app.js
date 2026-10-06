@@ -1,4 +1,4 @@
-import { calculatePatientRequirements, getLatestMeasurement } from "./nutrition.mjs";
+import { calculatePatientRequirements, derivePortionGuidance, getLatestMeasurement } from "./nutrition.mjs";
 
 const STORAGE_KEY = "nutri-guia-pacientes-v1";
 const APPOINTMENTS_KEY = "nutri-guia-turnos-v1";
@@ -189,7 +189,9 @@ function renderDetail(person) {
   const latestConsult = [...consultations].sort((a,b) => b.date.localeCompare(a.date))[0];
   const latestMeasure = getLatestMeasurement(person);
   const requirements = calculatePatientRequirements(person);
-  const mealProfileMessage = requirements ? `Objetivo energético para el borrador: ${requirements.dailyEnergyKcal} kcal/día; distribución interna 60% carbohidratos, 25% grasas y 15% proteínas.` : "No hay una estimación disponible: pueden faltar datos o el contexto requiere evitar este cálculo. El borrador se generará sin ese ajuste.";
+  const portionGuidance = requirements ? derivePortionGuidance(requirements) : null;
+  const tierLabel = { "liviano": "porciones livianas", "moderado": "porciones moderadas (plato mediano)", "abundante": "porciones abundantes (plato grande)", "amplio": "porciones amplias, con acompañamiento extra" };
+  const mealProfileMessage = requirements ? `Objetivo energético para el borrador: ${requirements.dailyEnergyKcal} kcal/día; distribución interna 60% carbohidratos, 25% grasas y 15% proteínas. Tamaño de porción orientativo para las comidas principales: ${tierLabel[portionGuidance?.overallTier] || "moderado"}.` : "No hay una estimación disponible: pueden faltar datos o el contexto requiere evitar este cálculo. El borrador se generará sin ese ajuste.";
   const tab = name => detailTab === name;
   const consultationsHTML = [...consultations].sort((a,b) => b.date.localeCompare(a.date)).map(item => `<details class="history-card"><summary><strong>${formatDate(item.date)} · ${escapeHTML(item.reason || "Consulta")}</strong></summary><form class="form-card history-edit" data-consultation="${escapeHTML(item.id)}"><label>Motivo<input name="reason" maxlength="160" value="${escapeHTML(item.reason || "")}" /></label><label>Observaciones<textarea name="notes" rows="2" maxlength="1200">${escapeHTML(item.notes || "")}</textarea></label><label>Adherencia y dificultades<textarea name="adherence" rows="2" maxlength="1000">${escapeHTML(item.adherence || "")}</textarea></label><label>Recomendaciones<textarea name="recommendations" rows="2" maxlength="1000">${escapeHTML(item.recommendations || "")}</textarea></label><label>Próximo control<input name="nextControl" type="date" value="${escapeHTML(item.nextControl || "")}" /></label><button class="button button-primary" type="submit">Guardar consulta</button></form></details>`).join("");
   const measurementRows = [...measurements].sort((a,b) => b.date.localeCompare(a.date)).map(item => { const bmi = item.bmi || (item.id === latestMeasure?.id ? latestMeasure.bmi : null); return `<tr><td>${formatDate(item.date)}</td><td>${item.weight ? `${escapeHTML(item.weight)} kg` : "—"}</td><td>${item.height ? `${escapeHTML(item.height)} cm` : "—"}</td><td>${bmi ? escapeHTML(bmi) : "—"}</td><td>${item.waist ? `${escapeHTML(item.waist)} cm` : "—"}</td><td>${item.hip ? `${escapeHTML(item.hip)} cm` : "—"}</td></tr>`; }).join("");
