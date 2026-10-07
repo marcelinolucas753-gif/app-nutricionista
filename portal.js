@@ -1,224 +1,143 @@
-function escapeHTML(value = "") { return String(value).replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]); }
-function formatDate(value) { if (!value) return "Sin fecha"; return new Date(`${value}T12:00:00`).toLocaleDateString("es-AR", { day: "numeric", month: "short", year: "numeric" }); }
+import { DAY_NAMES as DAYS, MEAL_SLOTS as MEALS } from "/safety.mjs";
+import { lineChartSVG } from "/charts.mjs";
 
-let portalToken = localStorage.getItem("nutri_portal_token");
-let isHash = false;
+const SESSION_KEY = "nutri_portal_session";
+const $ = id => document.getElementById(id);
+let session = null;
+try { session = localStorage.getItem(SESSION_KEY); } catch { /* sin almacenamiento */ }
 let toastTimer;
-function toast(message) { const el = document.getElementById("toast"); el.textContent = message; el.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("show"), 3400); }
 
-async function checkTokenInUrl() {
-  const pathParts = window.location.pathname.split('/');
-  if (pathParts.length >= 3 && pathParts[1] === 'portal') {
-    portalToken = pathParts[2];
-    isHash = true;
-    localStorage.setItem("nutri_portal_token", portalToken);
-    localStorage.setItem("nutri_portal_ishash", "true");
-    window.history.replaceState({}, document.title, "/portal");
-  } else {
-    isHash = localStorage.getItem("nutri_portal_ishash") === "true";
+const escapeHTML = (value = "") => String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+const formatDate = value => value ? new Date(`${String(value).slice(0, 10)}T12:00:00`).toLocaleDateString("es-AR", { day: "numeric", month: "short", year: "numeric" }) : "Sin fecha";
+/** Fecha de hoy en la zona horaria de la persona (no en UTC, que a la noche ya es "mañana"). */
+function todayLocal() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+function toast(message) { const el = $("toast"); el.textContent = message; el.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("show"), 4200); }
+function saveSession(value) { session = value; try { value ? localStorage.setItem(SESSION_KEY, value) : localStorage.removeItem(SESSION_KEY); } catch { /* sin almacenamiento */ } }
+
+async function call(path, { method = "GET", body, auth = true } = {}) {
+  const headers = {};
+  if (body) headers["Content-Type"] = "application/json";
+  if (auth && session) headers.Authorization = `Bearer ${session}`;
+  const response = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined, cache: "no-store" });
+  let payload = {};
+  try { payload = await response.json(); } catch { /* sin cuerpo */ }
+  if (!response.ok) throw Object.assign(new Error(payload.error || "No se pudo completar la solicitud."), { status: response.status });
+  return payload;
+}
+
+function showLogin(message = "") {
+  $("portal-login-gate").classList.remove("hidden");
+  $("portal-shell").classList.add("hidden");
+  $("portal-login-error").textContent = message;
+}
+
+async function loadPortal() {
+  if (!session) { showLogin(); return; }
+  try { render(await call("/api/portal/data")); }
+  catch (error) {
+    if (error.status === 401) { saveSession(null); showLogin("Tu acceso venció o fue quitado. Ingresá con el código nuevo que te dé tu profesional."); }
+    else { showLogin(error.message); }
   }
 }
 
-async function fetchPortalData() {
-  if (!portalToken) return showLogin();
+/** Si la dirección trae el enlace personal, se canjea por una sesión y se limpia la barra de direcciones. */
+async function consumeLink() {
+  const parts = location.pathname.split("/").filter(Boolean);
+  if (parts[0] !== "portal" || !parts[1]) return;
   try {
-    const res = await fetch("/api/portal/data", {
-      headers: { "Authorization": `Bearer ${portalToken}`, "x-is-hash": String(isHash) }
-    });
-    const body = await res.json();
-    if (!res.ok) {
-      if (res.status === 401) { logout(); throw new Error(body.error || "Acceso revocado o inválido"); }
-      throw new Error(body.error || "Error al cargar datos");
-    }
-    renderPortal(body);
-  } catch (err) {
-    document.getElementById("portal-login-error").textContent = err.message;
-  }
+    const result = await call("/api/portal/auth", { method: "POST", body: { token: decodeURIComponent(parts[1]) }, auth: false });
+    saveSession(result.token);
+  } catch (error) { saveSession(null); showLogin(error.message); }
+  history.replaceState({}, document.title, "/portal");
 }
 
-function showLogin() {
-  document.getElementById("portal-login-gate").classList.remove("hidden");
-  document.getElementById("portal-shell").classList.add("hidden");
+function mealBlocks(day) {
+  return MEALS.map(([key, title]) => day[key] ? `<div class="meal-edit"><label>${escapeHTML(title)}</label><div class="portal-meal">${escapeHTML(day[key])}</div></div>` : "").join("");
 }
 
-function logout() {
-  localStorage.removeItem("nutri_portal_token");
-  localStorage.removeItem("nutri_portal_ishash");
-  portalToken = null;
-  isHash = false;
-  showLogin();
+function render(data) {
+  $("portal-login-gate").classList.add("hidden");
+  $("portal-shell").classList.remove("hidden");
+  $("portal-prof-name").textContent = data.professionalName ? `Profesional: ${data.professionalName}` : "";
+  const first = String(data.patientName || "").trim().split(/\s+/)[0];
+  $("portal-welcome-name").textContent = first && !/^paciente$/i.test(first) ? `Hola, ${first} ✳` : "Hola ✳";
+
+  const appt = $("portal-next-appointment");
+  if (data.nextAppointment) { appt.textContent = `Próximo turno: ${new Date(data.nextAppointment).toLocaleString("es-AR", { dateStyle: "long", timeStyle: "short" })}`; appt.classList.remove("hidden"); }
+  else appt.classList.add("hidden");
+
+  // Metas
+  const goals = $("portal-goals");
+  if (data.goals?.length) {
+    goals.innerHTML = `<h2>Mis metas</h2>${data.goals.map(goal => `<div class="portal-goal ${goal.status === "achieved" ? "achieved" : ""}"><span>${goal.status === "achieved" ? "✓" : goal.status === "dropped" ? "–" : "○"}</span><span>${escapeHTML(goal.text)}${goal.targetDate ? ` <small class="qty">· para el ${formatDate(goal.targetDate)}</small>` : ""}</span></div>`).join("")}`;
+    goals.classList.remove("hidden");
+  } else goals.classList.add("hidden");
+
+  // Plan
+  const plan = $("portal-draft-content");
+  if (data.draft?.days) {
+    let html = `<div class="draft-intro">${escapeHTML(data.draft.intro || "")}</div>`;
+    html += data.draft.days.map((day, index) => `<details class="day-card" ${index === 0 ? "open" : ""}><summary><h3>${escapeHTML(day.day || DAYS[index])}</h3></summary><div class="meals-grid">${mealBlocks(day)}</div>${day.extra ? `<div class="portal-alt"><strong>Alternativa:</strong> ${escapeHTML(day.extra)}</div>` : ""}</details>`).join("");
+    if (data.draft.recommendations?.length) html += `<div class="recommendations"><h3>Recomendaciones</h3><ul>${data.draft.recommendations.map(item => `<li>${escapeHTML(item)}</li>`).join("")}</ul></div>`;
+    if (data.recipes?.length) html += `<div class="recipe-drafts" style="margin-top:20px;"><h3>Recetas de tu plan</h3>${data.recipes.map(recipe => `<article class="recipe-draft"><strong>${escapeHTML(recipe.name)} · ${escapeHTML(recipe.portions)}</strong><ul>${(recipe.ingredients || []).map(item => `<li>${escapeHTML(item.quantity)} ${escapeHTML(item.measure)} de ${escapeHTML(item.ingredient)}</li>`).join("")}</ul><ol>${(recipe.steps || []).map(step => `<li>${escapeHTML(step)}</li>`).join("")}</ol><small>${Number(recipe.timeMinutes) || ""} min · ${escapeHTML(recipe.difficulty || "")}</small></article>`).join("")}</div>`;
+    plan.innerHTML = html;
+  } else plan.innerHTML = `<div class="empty-state">Tu profesional todavía no aprobó un plan. Cuando lo haga, lo vas a ver acá.</div>`;
+
+  // Compras
+  const shopping = $("portal-shopping");
+  shopping.innerHTML = data.shoppingList?.categories?.length
+    ? `<h2>Lista de compras de la semana</h2><div class="shopping-grid">${data.shoppingList.categories.map(category => `<section class="shopping-category"><h4>${escapeHTML(category.name)}</h4><ul>${(category.items || []).map(item => `<li>${escapeHTML(item.item)}${item.quantity ? ` <span class="qty">— ${escapeHTML(item.quantity)}</span>` : ""}</li>`).join("")}</ul></section>`).join("")}</div><small class="metric-caption">Las cantidades son orientativas.</small>`
+    : `<div class="empty-state">Todavía no hay una lista de compras.</div>`;
+
+  // Pesos
+  const pending = $("portal-pending");
+  if (data.pendingWeights?.length) { pending.innerHTML = `Enviaste ${data.pendingWeights.length} peso(s) que tu profesional todavía no revisó: ${data.pendingWeights.map(item => `${escapeHTML(item.weight)} kg (${formatDate(item.date)})`).join(", ")}.`; pending.classList.remove("hidden"); }
+  else pending.classList.add("hidden");
+  const measures = data.measurements || [];
+  $("portal-weight-table").innerHTML = measures.length ? measures.map(item => `<tr><td>${formatDate(item.date)}</td><td>${item.weight ? `${escapeHTML(item.weight)} kg` : "—"}</td><td>${item.height ? `${escapeHTML(item.height)} cm` : "—"}</td></tr>`).join("") : `<tr><td colspan="3">Todavía no hay mediciones.</td></tr>`;
+  const points = measures.filter(item => item.weight).map(item => ({ date: item.date, value: item.weight }));
+  $("portal-weight-chart").innerHTML = points.length > 1 ? lineChartSVG({ title: "Mi peso", unit: "kg", series: [{ name: "Peso", color: "var(--primary)", points }] }) : `<div class="empty-state">Con dos o más pesos registrados vas a ver tu gráfico.</div>`;
+
+  $("portal-consultations-list").innerHTML = data.consultations?.length ? data.consultations.map(item => `<div class="history-card"><strong>${formatDate(item.date)} · Consulta</strong></div>`).join("") : `<div class="empty-state">No hay consultas previas.</div>`;
 }
 
-function renderPortal(data) {
-  document.getElementById("portal-login-gate").classList.add("hidden");
-  document.getElementById("portal-shell").classList.remove("hidden");
-  
-  document.getElementById("portal-prof-name").textContent = `Profesional: ${data.professionalName}`;
-  const nameParts = data.patientName.split(" ");
-  document.getElementById("portal-welcome-name").textContent = `Hola, ${escapeHTML(nameParts[0])} ✳`;
-  
-  if (data.nextAppointment) {
-    const apptEl = document.getElementById("portal-next-appointment");
-    apptEl.textContent = `Próximo turno: ${new Date(data.nextAppointment).toLocaleString("es-AR", { dateStyle: "long", timeStyle: "short" })}`;
-    apptEl.classList.remove("hidden");
-  }
+document.querySelectorAll("[data-ptab]").forEach(button => button.addEventListener("click", () => {
+  document.querySelectorAll("[data-ptab]").forEach(other => other.classList.toggle("active", other === button));
+  document.querySelectorAll(".portal-wrap .detail-panel").forEach(panel => panel.classList.add("hidden"));
+  $(`ptab-${button.dataset.ptab}`).classList.remove("hidden");
+}));
 
-  // Render Plan
-  const planEl = document.getElementById("portal-draft-content");
-  if (data.draft) {
-    let html = `<div class="draft-intro">${escapeHTML(data.draft.intro)}</div>`;
-    const DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
-    const MEALS = [["breakfast", "Desayuno"], ["snack1", "Colación mañana"], ["lunch", "Almuerzo"], ["snack2", "Colación tarde"], ["merienda", "Merienda"], ["dinner", "Cena"]];
-    
-    html += data.draft.days.map((day, idx) => `
-      <details class="day-card" ${idx === 0 ? "open" : ""}>
-        <summary><h3>${escapeHTML(day.day || DAYS[idx])}</h3></summary>
-        <div class="meals-grid">
-          ${MEALS.map(([key, title]) => day[key] ? `<div class="meal-edit"><label>${title}</label><div style="font-size:12px;color:var(--ink);padding:8px;background:#fbfcf9;border:1px solid #edf0eb;border-radius:8px;">${escapeHTML(day[key])}</div></div>` : "").join("")}
-        </div>
-        ${day.extra ? `<div style="margin:13px;padding:10px;background:#f4f2e9;border-radius:8px;font-size:11px;color:#756a53;"><strong>Alternativa:</strong> ${escapeHTML(day.extra)}</div>` : ""}
-      </details>
-    `).join("");
+$("portal-login-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const button = event.currentTarget.querySelector("button");
+  button.disabled = true; $("portal-login-error").textContent = "";
+  try {
+    const result = await call("/api/portal/auth", { method: "POST", body: { code: $("portal-code").value.trim() }, auth: false });
+    saveSession(result.token); await loadPortal();
+  } catch (error) { $("portal-login-error").textContent = error.message; }
+  finally { button.disabled = false; }
+});
 
-    if (data.draft.recommendations && data.draft.recommendations.length > 0) {
-      html += `<div class="recommendations"><h3>Recomendaciones</h3><ul>${data.draft.recommendations.map(r => `<li>${escapeHTML(r)}</li>`).join("")}</ul></div>`;
-    }
+$("portal-logout").addEventListener("click", async () => {
+  try { await call("/api/portal/logout", { method: "POST" }); } catch { /* igual se cierra en este dispositivo */ }
+  saveSession(null); showLogin();
+});
 
-    if (data.recipes && data.recipes.length > 0) {
-      html += `<div class="recipe-drafts" style="margin-top:20px;"><h3>Recetas de tu plan</h3>${data.recipes.map(recipe => `
-        <article class="recipe-draft">
-          <strong>${escapeHTML(recipe.name)} · ${escapeHTML(recipe.portions)}</strong>
-          <ul>${(recipe.ingredients || []).map(i => `<li>${escapeHTML(i.quantity)} ${escapeHTML(i.measure)} de ${escapeHTML(i.ingredient)}</li>`).join("")}</ul>
-          <ol>${(recipe.steps || []).map(step => `<li>${escapeHTML(step)}</li>`).join("")}</ol>
-          <small>${Number(recipe.timeMinutes) || ""} min · ${escapeHTML(recipe.difficulty || "")}</small>
-        </article>
-      `).join("")}</div>`;
-    }
-    planEl.innerHTML = html;
-  }
-
-  // Render Measurements & Chart
-  const tableEl = document.getElementById("portal-weight-table");
-  const chartEl = document.getElementById("portal-weight-chart");
-  if (data.measurements && data.measurements.length > 0) {
-    const validWeights = data.measurements.filter(m => m.weight).reverse(); // chronological for chart
-    
-    tableEl.innerHTML = data.measurements.map(m => `<tr><td>${formatDate(m.date)}</td><td>${m.weight ? m.weight + " kg" : "—"}</td><td>${m.height ? m.height + " cm" : "—"}</td></tr>`).join("");
-    
-    if (validWeights.length > 1) {
-      const minW = Math.min(...validWeights.map(w => w.weight)) - 2;
-      const maxW = Math.max(...validWeights.map(w => w.weight)) + 2;
-      const rangeW = maxW - minW;
-      
-      const pts = validWeights.map((w, i) => {
-        const x = (i / (validWeights.length - 1)) * 100;
-        const y = 100 - (((w.weight - minW) / rangeW) * 100);
-        return `${x},${y}`;
-      }).join(" ");
-      
-      chartEl.innerHTML = `<svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style="overflow:visible;">
-        <polyline points="${pts}" fill="none" stroke="var(--green)" stroke-width="2" />
-        ${validWeights.map((w, i) => {
-          const x = (i / (validWeights.length - 1)) * 100;
-          const y = 100 - (((w.weight - minW) / rangeW) * 100);
-          return `<circle cx="${x}" cy="${y}" r="2" fill="#fff" stroke="var(--green)" stroke-width="1"><title>${w.weight} kg - ${formatDate(w.date)}</title></circle>`;
-        }).join("")}
-      </svg>`;
-    } else {
-      chartEl.innerHTML = `<div class="empty-state">No hay suficientes datos para el gráfico.</div>`;
-    }
-  } else {
-    tableEl.innerHTML = `<tr><td colspan="3">Todavía no hay mediciones.</td></tr>`;
-    chartEl.innerHTML = `<div class="empty-state">No hay mediciones registradas.</div>`;
-  }
-
-  // Render Consultations
-  const consultList = document.getElementById("portal-consultations-list");
-  if (data.consultations && data.consultations.length > 0) {
-    consultList.innerHTML = data.consultations.map(c => `
-      <div class="history-card">
-        <strong>${formatDate(c.date)} · Consulta</strong>
-      </div>
-    `).join("");
-  } else {
-    consultList.innerHTML = `<div class="empty-state">No hay consultas previas.</div>`;
-  }
-}
-
-document.querySelectorAll("[data-ptab]").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll("[data-ptab]").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    document.querySelectorAll(".detail-panel").forEach(p => p.classList.add("hidden"));
-    document.getElementById(`ptab-${btn.dataset.ptab}`).classList.remove("hidden");
+function submitter(form, path, buildBody, okMessage, after) {
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+    const button = form.querySelector("button"); button.disabled = true;
+    try { await call(path, { method: "POST", body: buildBody(form) }); toast(okMessage); form.reset(); after?.(form); }
+    catch (error) {
+      if (error.status === 401) { saveSession(null); showLogin("Tu acceso venció. Ingresá de nuevo."); }
+      else toast(error.message);
+    } finally { button.disabled = false; }
   });
-});
+}
+submitter($("portal-weight-form"), "/api/portal/weight", form => ({ weight: Number(form.weight.value), date: form.date.value }), "Peso enviado. Tu profesional lo va a revisar.", form => { form.date.value = todayLocal(); loadPortal(); });
+submitter($("portal-note-form"), "/api/portal/note", form => ({ note: form.note.value, date: todayLocal() }), "Nota enviada a tu profesional.");
 
-document.getElementById("portal-login-form").addEventListener("submit", async e => {
-  e.preventDefault();
-  const code = document.getElementById("portal-code").value.trim();
-  const btn = e.target.querySelector("button");
-  const errEl = document.getElementById("portal-login-error");
-  btn.disabled = true; errEl.textContent = "";
-  try {
-    const res = await fetch("/api/portal/auth", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code }) });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-    portalToken = data.token;
-    isHash = true; // Auth by code returns token_hash
-    localStorage.setItem("nutri_portal_token", portalToken);
-    localStorage.setItem("nutri_portal_ishash", "true");
-    fetchPortalData();
-  } catch (err) {
-    errEl.textContent = err.message;
-  } finally {
-    btn.disabled = false;
-  }
-});
-
-document.getElementById("portal-logout").addEventListener("click", logout);
-
-document.getElementById("portal-weight-form").addEventListener("submit", async e => {
-  e.preventDefault();
-  const form = e.target;
-  const weight = Number(form.weight.value);
-  const date = form.date.value;
-  const btn = form.querySelector("button");
-  btn.disabled = true;
-  try {
-    const res = await fetch("/api/portal/weight", {
-      method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${portalToken}`, "x-is-hash": String(isHash) },
-      body: JSON.stringify({ weight, date })
-    });
-    if (!res.ok) throw new Error("Error al guardar");
-    toast("Peso guardado. Lo verá tu profesional en la próxima consulta.");
-    form.reset();
-    form.date.value = new Date().toISOString().split('T')[0];
-    fetchPortalData();
-  } catch (err) { toast(err.message); }
-  finally { btn.disabled = false; }
-});
-
-document.getElementById("portal-note-form").addEventListener("submit", async e => {
-  e.preventDefault();
-  const form = e.target;
-  const note = form.note.value;
-  const date = new Date().toISOString().split('T')[0];
-  const btn = form.querySelector("button");
-  btn.disabled = true;
-  try {
-    const res = await fetch("/api/portal/note", {
-      method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${portalToken}`, "x-is-hash": String(isHash) },
-      body: JSON.stringify({ note, date })
-    });
-    if (!res.ok) throw new Error("Error al guardar");
-    toast("Nota enviada a tu ficha.");
-    form.reset();
-  } catch (err) { toast(err.message); }
-  finally { btn.disabled = false; }
-});
-
-document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("portal-weight-date").value = new Date().toISOString().split('T')[0];
-  checkTokenInUrl().then(fetchPortalData);
-});
+$("portal-weight-date").value = todayLocal();
+$("portal-weight-date").max = todayLocal();
+consumeLink().then(loadPortal);
+if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js?v=12").catch(() => {}));
