@@ -47,3 +47,15 @@ async function pruneOldBackups(directory) {
 }
 
 export function backupKeyFingerprint() { return createHash("sha256").update(keyFromEnvironment()).digest("hex").slice(0, 12); }
+
+/** Estado de los respaldos para mostrarlo en la app, sin exponer nombres ni contenido. */
+export async function backupStatus() {
+  if (!process.env.DATABASE_URL || !process.env.BACKUP_ENCRYPTION_KEY) return { configured: false, count: 0, lastAt: null };
+  const directory = process.env.BACKUP_DIR || "./backups";
+  try {
+    const names = (await readdir(directory)).filter(name => /^nutri-guia-.*\.json\.gz\.enc$/.test(name));
+    let lastAt = 0;
+    for (const name of names) lastAt = Math.max(lastAt, (await stat(join(directory, name))).mtimeMs);
+    return { configured: true, count: names.length, lastAt: lastAt || null };
+  } catch { return { configured: true, count: 0, lastAt: null }; }
+}

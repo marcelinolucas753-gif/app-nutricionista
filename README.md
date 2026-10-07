@@ -12,6 +12,20 @@ Aplicación web en español para que profesionales de nutrición organicen pacie
 - Ningún alimento se excluye de forma automática. La IA considera las alergias, intolerancias y preferencias anotadas en esa ficha. Revisá etiquetas y contaminación cruzada cuando corresponda.
 - Los menús usan medidas caseras y evitan cantidades en gramos por ingrediente. La estimación Harris-Benedict y la distribución 60% carbohidratos, 25% grasas y 15% proteínas continúan siendo referencias para revisión profesional.
 
+### Novedades de la versión 12
+
+- **Alergias e intolerancias** como campo propio de la ficha. Cada menú, comida, receta y plantilla se revisa contra esas alergias y contra lo que la persona evita; las coincidencias se marcan en rojo. Aprobar un plan con coincidencias exige una confirmación explícita y queda en el historial. La revisión busca palabras: no reemplaza la lectura profesional ni detecta ingredientes ocultos.
+- **Avisos por WhatsApp** (turnos, acceso al portal y lista de compras): la app abre WhatsApp con el mensaje armado; la profesional toca «Enviar». No hay envío automático.
+- **Gráficos** de peso, cintura y cadera en la ficha y en el portal.
+- **Metas** por persona, con opción de mostrarlas en su portal.
+- **Lista de compras** semanal armada con IA a partir del menú, visible en el portal cuando el plan está aprobado.
+- **Plantillas de menú** reutilizables.
+- **Historial de cambios** por ficha (últimos 300 movimientos).
+- **Portal del paciente**: el enlace se canjea por una sesión de 30 días y se borra de la barra de direcciones; los pesos enviados quedan pendientes hasta que la profesional los acepta o descarta.
+- **Cambio de contraseña** en una ventana propia (ya no con cuadros de texto del navegador).
+- **Aviso de respaldos** en el inicio si no están activos o están desactualizados.
+- Si dos dispositivos guardan a la vez, ya no se pierde el último cambio: se descarga una copia antes de cargar la versión más reciente.
+
 ## Probar en una computadora
 
 La aplicación requiere Node.js 20.6 o posterior, npm y Docker Desktop para iniciar una base local de prueba.
@@ -59,6 +73,10 @@ La distribución de macronutrientes se fija en 60% carbohidratos, 25% grasas y 1
 
 Fuentes: [Roza y Shizgal (1984), Harris-Benedict revisada](https://pubmed.ncbi.nlm.nih.gov/6741850/); [National Academies, rangos de macronutrientes](https://www.nationalacademies.org/index.php/cdn/materials/9fb9fae6-337c-4b7c-9821-2c81d1f65ad0).
 
+### Respaldos en Render (importante)
+
+En Render, los archivos del servicio se borran en cada actualización o reinicio, salvo los que estén en un **disco persistente** (requiere un plan de pago). Para que los respaldos sobrevivan: Render → tu servicio → **Disks** → *Add Disk* con ruta de montaje `/var/data`, y en **Environment** agregá `BACKUP_DIR=/var/data/backups`. Después reiniciá el servicio; la app muestra en el Inicio si los respaldos están funcionando.
+
 ## Instalar en un celular
 
 Primero debe publicarse en una dirección HTTPS. Android: abrí el enlace en Chrome y elegí **Instalar app**. iPhone: abrilo en Safari, tocá **Compartir** y elegí **Agregar a pantalla de inicio**.
@@ -69,5 +87,6 @@ Primero debe publicarse en una dirección HTTPS. Android: abrí el enlace en Chr
 - `node --env-file=.env manage-users.mjs create correo@ejemplo.com "Nombre"`: crea un profesional.
 - `node --env-file=.env manage-users.mjs reset-password correo@ejemplo.com`: restablece una contraseña y cierra sus sesiones activas.
 - `node --env-file=.env restore-backup.mjs ruta/al/respaldo.enc`: restaura un respaldo cifrado previa confirmación.
+- `npm test`: corre las pruebas automáticas (alergias, validaciones, gráficos, contacto, lógica de la ficha).
 - `GET /api/health`: informa si la base está disponible, sin exponer información de las fichas.
 - Las consultas y guardados deben seguir usando HTTPS y no registrar los cuerpos de solicitudes, que pueden contener datos de salud.

@@ -9,7 +9,8 @@
   <meta name="theme-color" content="#14261f" />
   <meta name="description" content="Portal del paciente" />
   <link rel="icon" href="/icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="/styles.css?v=11" />
+  <link rel="stylesheet" href="/styles.css?v=12" />
+  <link rel="stylesheet" href="/features.css?v=12" />
   <title>Mi Portal - Nutri Guía</title>
 </head>
 <body class="portal-body">
@@ -35,20 +36,27 @@
 
         <nav class="detail-tabs" aria-label="Secciones del portal">
           <button type="button" data-ptab="menu" class="active">Mi plan</button>
+          <button type="button" data-ptab="shopping">Compras</button>
           <button type="button" data-ptab="progress">Progreso</button>
           <button type="button" data-ptab="consultations">Consultas</button>
         </nav>
 
         <section class="detail-panel" id="ptab-menu">
           <div id="portal-next-appointment" class="draft-banner hidden"></div>
+          <div id="portal-goals" class="form-card hidden"></div>
           <div id="portal-draft-content">
-            <div class="empty-state">No hay un plan activo en este momento.</div>
+            <div class="empty-state">Tu profesional todavía no aprobó un plan. Cuando lo haga, lo vas a ver acá.</div>
           </div>
+        </section>
+
+        <section class="detail-panel hidden" id="ptab-shopping">
+          <div id="portal-shopping" class="form-card"><div class="empty-state">Todavía no hay una lista de compras.</div></div>
         </section>
 
         <section class="detail-panel hidden" id="ptab-progress">
           <div class="form-card">
             <h2>Registrar peso actual</h2>
+            <div id="portal-pending" class="portal-pending hidden"></div>
             <form id="portal-weight-form" class="form-layout" style="gap: 8px;">
               <div class="form-row">
                 <label>Fecha
@@ -65,7 +73,7 @@
           </div>
           <div class="form-card" style="margin-top: 20px;">
             <h2>Mi progreso</h2>
-            <div id="portal-weight-chart" class="chart-container" style="height: 200px; margin: 20px 0;"></div>
+            <div id="portal-weight-chart" class="chart-container" style="margin: 20px 0;"></div>
             <div class="table-scroll">
               <table class="measure-table">
                 <thead><tr><th>Fecha</th><th>Peso (kg)</th><th>Talla (cm)</th></tr></thead>
@@ -103,7 +111,7 @@
       <p>Ingresá el código que te compartió tu profesional.</p>
       
       <label for="portal-code">Código de acceso</label>
-      <input id="portal-code" name="code" type="text" required placeholder="Ej: A1B2C3" autocomplete="off" style="text-transform: uppercase;" />
+      <input id="portal-code" name="code" type="text" required placeholder="Ej: K7M2QX9P" autocomplete="off" autocapitalize="characters" style="text-transform: uppercase;" />
       
       <button class="button button-primary" type="submit">Ingresar <span>→</span></button>
       <div id="portal-login-error" role="alert" class="login-error"></div>
