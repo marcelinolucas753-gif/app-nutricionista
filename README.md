@@ -26,6 +26,18 @@ Aplicación web en español para que profesionales de nutrición organicen pacie
 - **Aviso de respaldos** en el inicio si no están activos o están desactualizados.
 - Si dos dispositivos guardan a la vez, ya no se pierde el último cambio: se descarga una copia antes de cargar la versión más reciente.
 
+## Menús más prácticos y de la zona
+
+Las reglas que guían a la IA están en `menu-rules.mjs`. La primera parte del archivo es solo texto y se puede corregir sin programar:
+
+- Alimentos habituales de la zona y alimentos que no se usan por caros o poco comunes.
+- Cómo deben ser el desayuno, la merienda y las colaciones (simples y rápidos).
+- Qué hacer según dónde almuerza la persona (campo nuevo en la ficha).
+- Pauta de sábado y domingo (almuerzo y cena libres) y recomendaciones base por condición.
+- Palabras que delatan una preparación elaborada: si la IA las usa en el desayuno o la merienda, la app pide una versión más simple una vez; si insiste, el borrador se entrega con un aviso en las notas de revisión.
+
+Los textos fijos de fin de semana y recomendaciones base no nombran alimentos a propósito, para que nunca choquen con alergias o alimentos que la persona evita. Todo sigue siendo un borrador para revisión profesional.
+
 ## Probar en una computadora
 
 La aplicación requiere Node.js 20.6 o posterior, npm y Docker Desktop para iniciar una base local de prueba.

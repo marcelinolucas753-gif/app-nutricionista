@@ -6,7 +6,8 @@
  */
 import { fail } from "./validation.mjs";
 import { calculatePatientRequirements, derivePortionGuidance } from "./nutrition.mjs";
-import { MEAL_SLOTS, analyzeDraft, analyzeText, describeConflict, hasExactNutritionAmounts } from "./safety.mjs";
+import { DAY_NAMES, MEAL_SLOTS, analyzeDraft, analyzeText, describeConflict, hasExactNutritionAmounts } from "./safety.mjs";
+import { LUNCH_PLACES, applyFreeWeekend, baseRecommendationsFor, describeElaborate, findElaborateLightMeals, lunchPlaceRule, menuStyleInstructions, mergeRecommendations, singleMealStyleRule } from "./menu-rules.mjs";
 
 const mealKeys = MEAL_SLOTS.map(([key]) => key);
 
@@ -70,7 +71,8 @@ const CONFLICT_ERROR = "La IA propuso alimentos que coinciden con alergias o int
 function patientContext(patient) {
   return {
     age: Number(patient.age), condition: CONDITION_LABELS[patient.condition] || "Ficha", goal: patient.goal,
-    likes: patient.likes || "", avoids: patient.avoids || "", allergies: patient.allergies || "", schedule: patient.schedule || "", context: patient.context || ""
+    likes: patient.likes || "", avoids: patient.avoids || "", allergies: patient.allergies || "", schedule: patient.schedule || "", context: patient.context || "",
+    lunchPlace: LUNCH_PLACES[patient.lunchPlace]?.label || "No especificado"
   };
 }
 
@@ -87,19 +89,42 @@ export async function generateWeeklyMenu(patient) {
     ...patientContext(patient), budget: BUDGET_LABELS[patient.budget] || "Medio",
     likes: patient.likes || "No especificado", avoids: patient.avoids || "No especificado", schedule: patient.schedule || "No especificado", context: patient.context || "No especificado",
     requirements: requirements ? { dailyEnergyKcal: requirements.dailyEnergyKcal, macroDistribution: requirements.macroDistribution } : null,
-    portionGuidance
+    portionGuidance, baseRecommendations: baseRecommendationsFor(patient.condition)
   };
-  const instructions = `Sos un asistente para un estudiante avanzado de nutrición. Redactás borradores educativos para revisión profesional; no diagnostiques ni inventes información clínica. Usa alimentos cotidianos, económicos según presupuesto, y medidas caseras fáciles de entender (taza, rodaja, unidad, cucharada, plato o tamaño de la palma). No indiques gramos por alimento ni calorías o porcentajes de macros en el menú. Si input contiene portionGuidance, usá el campo perSlot (una entrada por breakfast, snack1, lunch, snack2, merienda, dinner) como regla OBLIGATORIA de tamaño de porción para esa comida: el campo hint de cada entrada ya describe, en medidas caseras, qué tan grande debe ser esa comida; elegí alimentos reales que encajen en ese tamaño, sin repetir los números de approxShareKcal ni mencionar la palabra kcal o calorías en el texto. Si portionGuidance incluye proteinEmphasis, aplicá esa indicación en las comidas principales. Si no hay requirements ni portionGuidance, usá porciones moderadas estándar y decilo en reviewNotes. No prometas precisión ni cambies mantenimiento por déficit/superávit. ${ALLERGY_RULE} Respetá los alimentos evitados, preferencias y horarios que efectivamente se indiquen en la ficha. No agregues exclusiones alimentarias que no estén indicadas. Para una alimentación vegetariana, respetá la preferencia si está expresada. No afirmes que un producto está libre de contaminación cruzada; recordá revisar etiqueta y manipulación cuando corresponda. Para diabetes tipo 2 e hipertensión, da recomendaciones generales prudentes sin ajustar medicamentos. Si falta información necesaria, dilo en reviewNotes. En español rioplatense. Cada día incluye desayuno (breakfast), colación matutina (snack1), almuerzo (lunch), colación vespertina (snack2), merienda (merienda), cena (dinner) y extra con una alternativa opcional. Las notas de revisión recuerdan validar alergias, medicación y adecuación individual.`;
-  let mustFix;
+  const instructions = `Sos un asistente para un estudiante avanzado de nutrición. Redactás borradores educativos para revisión profesional; no diagnostiques ni inventes información clínica. Usa alimentos cotidianos, económicos según presupuesto, y medidas caseras fáciles de entender (taza, rodaja, unidad, cucharada, plato o tamaño de la palma). No indiques gramos por alimento ni calorías o porcentajes de macros en el menú. Si input contiene portionGuidance, usá el campo perSlot (una entrada por breakfast, snack1, lunch, snack2, merienda, dinner) como regla OBLIGATORIA de tamaño de porción para esa comida: el campo hint de cada entrada ya describe, en medidas caseras, qué tan grande debe ser esa comida; elegí alimentos reales que encajen en ese tamaño, sin repetir los números de approxShareKcal ni mencionar la palabra kcal o calorías en el texto. Si portionGuidance incluye proteinEmphasis, aplicá esa indicación en las comidas principales. Si no hay requirements ni portionGuidance, usá porciones moderadas estándar y decilo en reviewNotes. No prometas precisión ni cambies mantenimiento por déficit/superávit. ${ALLERGY_RULE} Respetá los alimentos evitados, preferencias y horarios que efectivamente se indiquen en la ficha. No agregues exclusiones alimentarias que no estén indicadas. Para una alimentación vegetariana, respetá la preferencia si está expresada. No afirmes que un producto está libre de contaminación cruzada; recordá revisar etiqueta y manipulación cuando corresponda. Para diabetes tipo 2 e hipertensión, da recomendaciones generales prudentes sin ajustar medicamentos. Si falta información necesaria, dilo en reviewNotes. En español rioplatense. Cada día incluye desayuno (breakfast), colación matutina (snack1), almuerzo (lunch), colación vespertina (snack2), merienda (merienda), cena (dinner) y extra con una alternativa opcional. Las notas de revisión recuerdan validar alergias, medicación y adecuación individual. ${menuStyleInstructions()} ${lunchPlaceRule(patient.lunchPlace)} Si aparece el campo mustFix, corregí exactamente esos puntos y dejá todo lo demás igual.`;
+  // Dos intentos como máximo. Las alergias son obligatorias: si persisten, no se devuelve nada.
+  // Las comidas livianas elaboradas se corrigen una vez; si la IA insiste, se avisa en las notas de revisión.
+  let mustFix, fallback;
   for (let attempt = 0; attempt < 2; attempt++) {
     const output = await callOpenAI({ name: "weekly_meal_draft", schema: weeklySchema, instructions, input: mustFix ? { ...base, mustFix } : base });
     checkMenuStructure(output);
-    const conflicts = analyzeDraft(patient, output).filter(item => item.severity === "allergy");
-    if (!conflicts.length) return output;
-    mustFix = conflicts.map(describeConflict);
+    const allergies = analyzeDraft(patient, output).filter(item => item.severity === "allergy");
+    const elaborate = findElaborateLightMeals(output);
+    if (!allergies.length) {
+      if (!elaborate.length) return finishMenu(patient, output, []);
+      if (attempt === 1) return finishMenu(patient, output, elaborate);
+      fallback = { output, elaborate }; // borrador seguro, por si el segundo intento trae una alergia
+    } else if (attempt === 1) {
+      if (fallback) return finishMenu(patient, fallback.output, fallback.elaborate);
+      throw fail(CONFLICT_ERROR, 502);
+    }
+    mustFix = [...allergies.map(describeConflict), ...elaborate.map(describeElaborate)];
   }
   throw fail(CONFLICT_ERROR, 502);
 }
+
+/** Aplica el fin de semana libre y las recomendaciones base; avisa lo que no se pudo simplificar. */
+function finishMenu(patient, output, stillElaborate) {
+  output.days.forEach((day, index) => { day.day = DAY_NAMES[index]; });
+  applyFreeWeekend(output, patient.condition);
+  output.recommendations = mergeRecommendations(patient.condition, output.recommendations);
+  const notes = [];
+  if (stillElaborate.length) notes.push(`Revisá estas comidas livianas, que podrían ser más simples: ${stillElaborate.map(item => `${item.day || `día ${item.dayIndex + 1}`} (${SLOT_SHORT[item.slot]})`).join(", ")}.`);
+  if (!patient.lunchPlace) notes.push("No se indicó dónde almuerza la persona: completalo en la ficha para que el almuerzo se adapte a su rutina.");
+  output.reviewNotes = [...notes, ...(Array.isArray(output.reviewNotes) ? output.reviewNotes : [])].slice(0, 5);
+  return output;
+}
+const SLOT_SHORT = { breakfast: "desayuno", merienda: "merienda" };
 
 export async function summarizeConsultations(patient) {
   const consultations = [...(patient.consultations || [])].sort((a, b) => String(a.date || "").localeCompare(String(b.date || ""))).slice(-12).map(item => ({ date: item.date, reason: item.reason, notes: item.notes, adherence: item.adherence, recommendations: item.recommendations }));
@@ -119,7 +144,7 @@ export async function regenerateMeal(patient, { dayIndex, mealKey, instruction }
     otherMealsThatDay: mealKeys.filter(other => other !== mealKey).map(other => day[other]), instruction: instruction || ""
   };
   delete base.context;
-  const instructions = `Proponé una sola comida en español rioplatense y medidas caseras. Si input contiene portionGuidance, su campo hint describe, en medidas caseras, el tamaño OBLIGATORIO de esta comida: elegí alimentos reales que encajen en ese tamaño, sin repetir números de kcal ni mencionar calorías. Respetá la comida, las preferencias y restricciones que aparecen en el contexto. ${ALLERGY_RULE} No agregues exclusiones no indicadas. No des gramos, calorías ni porcentajes. Es un borrador que revisará un profesional. No afirmes equivalencia clínica.`;
+  const instructions = `Proponé una sola comida en español rioplatense y medidas caseras. Si input contiene portionGuidance, su campo hint describe, en medidas caseras, el tamaño OBLIGATORIO de esta comida: elegí alimentos reales que encajen en ese tamaño, sin repetir números de kcal ni mencionar calorías. Respetá la comida, las preferencias y restricciones que aparecen en el contexto. ${ALLERGY_RULE} No agregues exclusiones no indicadas. No des gramos, calorías ni porcentajes. Es un borrador que revisará un profesional. No afirmes equivalencia clínica. ${singleMealStyleRule(mealKey)} ${mealKey === "lunch" ? lunchPlaceRule(patient.lunchPlace) : ""} Priorizá alimentos habituales y accesibles de la zona; no uses ingredientes caros o poco comunes.`;
   let mustFix;
   for (let attempt = 0; attempt < 2; attempt++) {
     const result = await callOpenAI({ name: "replacement_meal", schema: mealSchema, instructions, input: mustFix ? { ...base, mustFix } : base });

@@ -71,7 +71,7 @@ export function openForm(id = null) {
   const person = id ? findPatient(id) : null;
   $("form-title").textContent = person ? "Editar ficha" : "Nueva ficha";
   if (person) {
-    for (const key of ["name", "age", "condition", "goal", "likes", "allergies", "avoids", "budget", "schedule", "context", "phone", "email", "equationSex", "activityLevel"]) if (form.elements[key]) form.elements[key].value = person[key] ?? "";
+    for (const key of ["name", "age", "condition", "goal", "likes", "allergies", "avoids", "budget", "schedule", "lunchPlace", "context", "phone", "email", "equationSex", "activityLevel"]) if (form.elements[key]) form.elements[key].value = person[key] ?? "";
     const latest = getLatestMeasurement(person);
     if (latest) for (const [field, key] of [["initialWeight", "weight"], ["initialHeight", "height"], ["initialWaist", "waist"], ["initialHip", "hip"]]) form.elements[field].value = latest[key] || "";
     form.elements.consent.checked = Boolean(person.consentedAt && person.consentVersion === CONSENT_VERSION);
@@ -98,7 +98,7 @@ function submitPatient(event) {
     ...(old || {}), id: old?.id || uid(), createdAt: old?.createdAt || Date.now(), updatedAt: Date.now(),
     name: data.name.trim(), age: Number(data.age), condition: data.condition, equationSex: data.equationSex || null, activityLevel: data.activityLevel || null,
     phone: (data.phone || "").trim(), email: (data.email || "").trim(),
-    goal: data.goal.trim(), likes: data.likes.trim(), allergies: (data.allergies || "").trim(), avoids: data.avoids.trim(), budget: data.budget, schedule: data.schedule.trim(), context: data.context.trim(),
+    goal: data.goal.trim(), likes: data.likes.trim(), allergies: (data.allergies || "").trim(), avoids: data.avoids.trim(), budget: data.budget, schedule: data.schedule.trim(), lunchPlace: data.lunchPlace || "", context: data.context.trim(),
     measurements,
     consentedAt: form.elements.consent.checked ? (consentStillValid ? old.consentedAt : Date.now()) : null,
     consentVersion: form.elements.consent.checked ? CONSENT_VERSION : null
