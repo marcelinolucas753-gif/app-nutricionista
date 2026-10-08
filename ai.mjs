@@ -7,6 +7,7 @@
 import { fail } from "./validation.mjs";
 import { calculatePatientRequirements, derivePortionGuidance } from "./nutrition.mjs";
 import { DAY_NAMES, MEAL_SLOTS, analyzeDraft, analyzeText, describeConflict, hasExactNutritionAmounts } from "./safety.mjs";
+import { noteCall } from "./ai-metrics.mjs";
 import { LUNCH_PLACES, applyFreeWeekend, baseRecommendationsFor, describeElaborate, findElaborateLightMeals, lunchPlaceRule, menuStyleInstructions, mergeRecommendations, singleMealStyleRule } from "./menu-rules.mjs";
 
 const mealKeys = MEAL_SLOTS.map(([key]) => key);
@@ -42,17 +43,26 @@ const shoppingSchema = {
   }
 };
 
-export async function callOpenAI({ name, schema, instructions, input }) {
+/** Llama a OpenAI y registra tiempo y tokens para la medición (ai-metrics.mjs). */
+export async function callOpenAI(args) {
+  const model = process.env.OPENAI_MODEL || "gpt-6-luna";
+  let usage;
+  try { return await requestOpenAI(args, model, found => { usage = found; }); }
+  finally { noteCall({ model, usage }); }
+}
+
+async function requestOpenAI({ name, schema, instructions, input }, model, onUsage) {
   const key = process.env.OPENAI_API_KEY;
   if (!key) throw fail("Falta configurar la clave de OpenAI en el servidor.", 503);
   let response;
   try {
     response = await fetch(process.env.OPENAI_BASE_URL || "https://api.openai.com/v1/responses", {
       method: "POST", headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" }, signal: AbortSignal.timeout(60_000),
-      body: JSON.stringify({ model: process.env.OPENAI_MODEL || "gpt-6-luna", instructions, input: JSON.stringify(input), text: { format: { type: "json_schema", name, strict: true, schema } } })
+      body: JSON.stringify({ model, instructions, input: JSON.stringify(input), text: { format: { type: "json_schema", name, strict: true, schema } } })
     });
   } catch (error) { throw fail(error?.name === "TimeoutError" ? "La solicitud de IA tardó demasiado. Volvé a intentar." : "No se pudo conectar con la IA. Revisá la conexión y volvé a intentar.", 502); }
   let payload; try { payload = await response.json(); } catch { throw fail("La IA devolvió una respuesta que no se pudo leer.", 502); }
+  onUsage(payload?.usage);
   if (!response.ok) {
     const code = payload?.error?.code || payload?.error?.type || "";
     if (response.status === 401 || code === "invalid_api_key") throw fail("La clave de IA configurada no fue aceptada.", 502);

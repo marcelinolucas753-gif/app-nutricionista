@@ -1,6 +1,7 @@
 import { $, DAYS, MEALS, api, copyText, escapeHTML, formatDateTime, openExternal, patientName, toast } from "./util.js";
 import { S, ensureSaved, queueSave } from "./state.js";
 import { draftFromTemplate, hasDeclaredAllergies, logHistory, makeTemplate, uid } from "./logic.js";
+import { bindFeedback, feedbackHTML } from "./feedback.js";
 import { analyzeDraft, analyzeText, describeConflict, hasAllergyConflicts, hasExactNutritionAmounts } from "../safety.mjs";
 import { buildShoppingMessage, whatsappLink } from "../contact.mjs";
 import { calculatePatientRequirements, derivePortionGuidance } from "../nutrition.mjs";
@@ -62,8 +63,8 @@ function recipesHTML(person, printable = false) {
 function draftHTML(person, conflicts) {
   const marked = new Set(conflicts.map(conflictKey));
   const draft = person.draft;
-  const days = draft.days.map((day, index) => `<details class="day-card" ${index === 0 || conflicts.some(item => item.dayIndex === index) ? "open" : ""}><summary><h3>${escapeHTML(day.day || DAYS[index])}</h3></summary><div class="meals-grid">${MEALS.map(([key, title]) => `<div class="meal-edit ${marked.has(`${index}:${key}`) ? "has-conflict" : ""}"><label>${title}<textarea data-day="${index}" data-meal="${key}" rows="3">${escapeHTML(day[key] || "")}</textarea></label><div class="ai-actions no-print"><button type="button" class="button button-quiet" data-ai-meal="replace">Reemplazar comida</button><button type="button" class="button button-quiet" data-ai-meal="recipe">Crear receta</button><button type="button" class="button button-quiet" data-ai-meal="substitute">Sugerir sustituciones</button></div><div class="ai-result hidden"></div></div>`).join("")}</div>${day.extra ? `<div class="metric-caption extra-line ${marked.has(`${index}:extra`) ? "has-conflict" : ""}">Alternativa: ${escapeHTML(day.extra)}</div>` : ""}</details>`).join("");
-  return `<div class="draft-intro">${escapeHTML(draft.intro || "Propuesta semanal orientativa, pendiente de revisión clínica.")}</div><div class="draft-week">${days}</div><section class="recommendations"><h3>Recomendaciones para conversar</h3><ul>${(draft.recommendations || []).map(item => `<li>${escapeHTML(item)}</li>`).join("")}</ul></section><section class="review-notes"><h3>Para revisar antes de compartir</h3><ul>${(draft.reviewNotes || ["Validá que el borrador sea apropiado para esta persona."]).map(item => `<li>${escapeHTML(item)}</li>`).join("")}</ul></section>`;
+  const days = draft.days.map((day, index) => `<details class="day-card" ${index === 0 || conflicts.some(item => item.dayIndex === index) ? "open" : ""}><summary><h3>${escapeHTML(day.day || DAYS[index])}</h3></summary><div class="meals-grid">${MEALS.map(([key, title]) => `<div class="meal-edit ${marked.has(`${index}:${key}`) ? "has-conflict" : ""}"><label>${title}<textarea data-day="${index}" data-meal="${key}" rows="3">${escapeHTML(day[key] || "")}</textarea></label><div class="ai-actions no-print"><button type="button" class="button button-quiet" data-ai-meal="replace">Reemplazar comida</button><button type="button" class="button button-quiet" data-ai-meal="recipe">Crear receta</button><button type="button" class="button button-quiet" data-ai-meal="substitute">Sugerir sustituciones</button>${feedbackHTML("meal", key)}</div><div class="ai-result hidden"></div></div>`).join("")}</div>${day.extra ? `<div class="metric-caption extra-line ${marked.has(`${index}:extra`) ? "has-conflict" : ""}">Alternativa: ${escapeHTML(day.extra)}</div>` : ""}</details>`).join("");
+  return `<div class="draft-intro">${escapeHTML(draft.intro || "Propuesta semanal orientativa, pendiente de revisión clínica.")}</div><div class="plan-feedback no-print"><small>¿Te sirve esta propuesta?</small> ${feedbackHTML("plan")}</div><div class="draft-week">${days}</div><section class="recommendations"><h3>Recomendaciones para conversar</h3><ul>${(draft.recommendations || []).map(item => `<li>${escapeHTML(item)}</li>`).join("")}</ul></section><section class="review-notes"><h3>Para revisar antes de compartir</h3><ul>${(draft.reviewNotes || ["Validá que el borrador sea apropiado para esta persona."]).map(item => `<li>${escapeHTML(item)}</li>`).join("")}</ul></section>`;
 }
 
 function shoppingHTML(person) {
@@ -193,6 +194,7 @@ async function printPlan(person, el, rerender) {
 
 export function bindPlans(el, person, rerender) {
   el.querySelector("#energy-adjust-form")?.addEventListener("submit", event => { event.preventDefault(); person.energyAdjustmentKcal = Number(new FormData(event.currentTarget).get("adjustment")) || 0; person.updatedAt = Date.now(); queueSave(); rerender(); toast("Objetivo energético actualizado para el próximo borrador."); });
+  bindFeedback(el);
   el.querySelector("#generate-menu")?.addEventListener("click", () => generateMenu(person, rerender));
   el.querySelector("#approve-plan")?.addEventListener("click", () => approve(person, rerender));
   el.querySelector("#print-menu")?.addEventListener("click", () => printPlan(person, el, rerender));
