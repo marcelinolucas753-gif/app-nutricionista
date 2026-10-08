@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { pool, withProfessional, writeAudit } from "./db.mjs";
 import { createEncryptedBackup, validateBackupKey, backupStatus } from "./backup.mjs";
 import { fail, validatedDocument, validatePortalNote, validatePortalWeight } from "./validation.mjs";
+import { measureAi, saveFeedback, validateFeedback } from "./ai-metrics.mjs";
 import { createRecipe, generateShoppingList, generateWeeklyMenu, regenerateMeal, suggestSubstitutions, summarizeConsultations } from "./ai.mjs";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
@@ -224,9 +225,16 @@ async function handle(req, res) {
     try {
       const request = await readJson(req, 20_000); const patient = await loadPatient(user.id, request.patientId); requireAiConsent(patient);
       if (!Number.isFinite(Number(patient.age)) || !patient.condition || !patient.goal) throw fail("Faltan datos necesarios para proponer el menú.");
-      const output = await generateWeeklyMenu(patient);
+      const output = await measureAi("ai_weekly_menu", user.id, () => generateWeeklyMenu(patient));
       await writeAudit(user.id, "ai_weekly_menu", "success").catch(() => {}); json(res, 200, output);
     } catch (error) { json(res, error.status || 500, { error: error.message || "No se pudo generar el menú." }); }
+    return;
+  }
+  if (pathname === "/api/feedback" && req.method === "POST") {
+    const user = await requireSession(req, res); if (!user) return;
+    if (!rateAllowed(`feedback:${user.id}`, 200, 60 * 60 * 1000)) { json(res, 429, { error: "Se alcanzó el límite temporal de opiniones. Volvé a intentar más tarde." }); return; }
+    try { await saveFeedback(user.id, validateFeedback(await readJson(req, 4_000))); json(res, 200, { ok: true }); }
+    catch (error) { json(res, error.status || 500, { error: error.status ? error.message : "No se pudo guardar tu opinión." }); }
     return;
   }
   if (pathname.startsWith("/api/ai/") && req.method === "POST") {
@@ -235,11 +243,11 @@ async function handle(req, res) {
     try {
       const body = await readJson(req, 40_000); const patient = await loadPatient(user.id, body.patientId); requireAiConsent(patient);
       let result; let action;
-      if (pathname === "/api/ai/consultation-summary") { result = await summarizeConsultations(patient); action = "ai_consultation_summary"; }
-      else if (pathname === "/api/ai/regenerate-meal") { result = await regenerateMeal(patient, { dayIndex: Number(body.dayIndex), mealKey: body.mealKey, instruction: typeof body.instruction === "string" ? body.instruction.trim().slice(0, 500) : "" }); action = "ai_meal_replacement"; }
-      else if (pathname === "/api/ai/recipe") { result = await createRecipe(patient, { meal: typeof body.meal === "string" ? body.meal.trim().slice(0, 1000) : "", portions: body.portions }); action = "ai_recipe"; }
-      else if (pathname === "/api/ai/substitutions") { result = await suggestSubstitutions(patient, { meal: typeof body.meal === "string" ? body.meal.trim().slice(0, 1000) : "", ingredient: typeof body.ingredient === "string" ? body.ingredient.trim().slice(0, 160) : "" }); action = "ai_substitution_ideas"; }
-      else if (pathname === "/api/ai/shopping-list") { result = await generateShoppingList(patient, body.days); action = "ai_shopping_list"; }
+      if (pathname === "/api/ai/consultation-summary") { action = "ai_consultation_summary"; result = await measureAi(action, user.id, () => summarizeConsultations(patient)); }
+      else if (pathname === "/api/ai/regenerate-meal") { action = "ai_meal_replacement"; result = await measureAi(action, user.id, () => regenerateMeal(patient, { dayIndex: Number(body.dayIndex), mealKey: body.mealKey, instruction: typeof body.instruction === "string" ? body.instruction.trim().slice(0, 500) : "" })); }
+      else if (pathname === "/api/ai/recipe") { action = "ai_recipe"; result = await measureAi(action, user.id, () => createRecipe(patient, { meal: typeof body.meal === "string" ? body.meal.trim().slice(0, 1000) : "", portions: body.portions })); }
+      else if (pathname === "/api/ai/substitutions") { action = "ai_substitution_ideas"; result = await measureAi(action, user.id, () => suggestSubstitutions(patient, { meal: typeof body.meal === "string" ? body.meal.trim().slice(0, 1000) : "", ingredient: typeof body.ingredient === "string" ? body.ingredient.trim().slice(0, 160) : "" })); }
+      else if (pathname === "/api/ai/shopping-list") { action = "ai_shopping_list"; result = await measureAi(action, user.id, () => generateShoppingList(patient, body.days)); }
       else throw fail("No encontramos esa función de IA.", 404);
       await writeAudit(user.id, action, "success").catch(() => {});
       json(res, 200, result);
