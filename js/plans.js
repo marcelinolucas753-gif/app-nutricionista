@@ -16,6 +16,9 @@ export function captureDraftEdits(person) {
   let changed = false;
   const panel = document.getElementById("plans-panel");
   if (!panel || panel.dataset.patient !== person.id) return false;
+  // Si el borrador se reemplazó (nuevo, versión restaurada o plantilla), las cajas de texto
+  // todavía muestran el anterior: copiarlas encima haría perder el borrador nuevo.
+  if (panel.draftShown !== person.draft) return false;
   panel.querySelectorAll("textarea[data-day][data-meal]").forEach(area => {
     const day = person.draft.days[Number(area.dataset.day)];
     if (!day) return;
@@ -193,6 +196,8 @@ async function printPlan(person, el, rerender) {
 }
 
 export function bindPlans(el, person, rerender) {
+  const panel = el.querySelector("#plans-panel");
+  if (panel) panel.draftShown = person.draft; // qué borrador están mostrando las cajas de texto
   el.querySelector("#energy-adjust-form")?.addEventListener("submit", event => { event.preventDefault(); person.energyAdjustmentKcal = Number(new FormData(event.currentTarget).get("adjustment")) || 0; person.updatedAt = Date.now(); queueSave(); rerender(); toast("Objetivo energético actualizado para el próximo borrador."); });
   bindFeedback(el);
   el.querySelector("#generate-menu")?.addEventListener("click", () => generateMenu(person, rerender));
