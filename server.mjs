@@ -7,7 +7,8 @@ import { fileURLToPath } from "node:url";
 import { pool, withProfessional, writeAudit } from "./db.mjs";
 import { createEncryptedBackup, validateBackupKey, backupStatus } from "./backup.mjs";
 import { fail, validatedDocument, validatePortalNote, validatePortalWeight } from "./validation.mjs";
-import { measureAi, saveFeedback, validateFeedback } from "./ai-metrics.mjs";
+import { measureAi, recentFeedback, saveFeedback, validateFeedback } from "./ai-metrics.mjs";
+import { buildLearning } from "./learning.mjs";
 import { createRecipe, generateShoppingList, generateWeeklyMenu, regenerateMeal, suggestSubstitutions, summarizeConsultations } from "./ai.mjs";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
@@ -225,7 +226,8 @@ async function handle(req, res) {
     try {
       const request = await readJson(req, 20_000); const patient = await loadPatient(user.id, request.patientId); requireAiConsent(patient);
       if (!Number.isFinite(Number(patient.age)) || !patient.condition || !patient.goal) throw fail("Faltan datos necesarios para proponer el menú.");
-      const output = await measureAi("ai_weekly_menu", user.id, () => generateWeeklyMenu(patient));
+      const learning = buildLearning(await recentFeedback(user.id), patient);
+      const output = await measureAi("ai_weekly_menu", user.id, () => generateWeeklyMenu(patient, learning));
       await writeAudit(user.id, "ai_weekly_menu", "success").catch(() => {}); json(res, 200, output);
     } catch (error) { json(res, error.status || 500, { error: error.message || "No se pudo generar el menú." }); }
     return;
@@ -244,7 +246,7 @@ async function handle(req, res) {
       const body = await readJson(req, 40_000); const patient = await loadPatient(user.id, body.patientId); requireAiConsent(patient);
       let result; let action;
       if (pathname === "/api/ai/consultation-summary") { action = "ai_consultation_summary"; result = await measureAi(action, user.id, () => summarizeConsultations(patient)); }
-      else if (pathname === "/api/ai/regenerate-meal") { action = "ai_meal_replacement"; result = await measureAi(action, user.id, () => regenerateMeal(patient, { dayIndex: Number(body.dayIndex), mealKey: body.mealKey, instruction: typeof body.instruction === "string" ? body.instruction.trim().slice(0, 500) : "" })); }
+      else if (pathname === "/api/ai/regenerate-meal") { action = "ai_meal_replacement"; const learning = buildLearning(await recentFeedback(user.id), patient, { slot: body.mealKey }); result = await measureAi(action, user.id, () => regenerateMeal(patient, { dayIndex: Number(body.dayIndex), mealKey: body.mealKey, learning, instruction: typeof body.instruction === "string" ? body.instruction.trim().slice(0, 500) : "" })); }
       else if (pathname === "/api/ai/recipe") { action = "ai_recipe"; result = await measureAi(action, user.id, () => createRecipe(patient, { meal: typeof body.meal === "string" ? body.meal.trim().slice(0, 1000) : "", portions: body.portions })); }
       else if (pathname === "/api/ai/substitutions") { action = "ai_substitution_ideas"; result = await measureAi(action, user.id, () => suggestSubstitutions(patient, { meal: typeof body.meal === "string" ? body.meal.trim().slice(0, 1000) : "", ingredient: typeof body.ingredient === "string" ? body.ingredient.trim().slice(0, 160) : "" })); }
       else if (pathname === "/api/ai/shopping-list") { action = "ai_shopping_list"; result = await measureAi(action, user.id, () => generateShoppingList(patient, body.days)); }

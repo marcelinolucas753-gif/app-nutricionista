@@ -95,3 +95,15 @@ export async function saveFeedback(professionalId, input) {
     [professionalId, input.scope, input.mealKey, input.rating, input.reasons, input.mealText, RULES_VERSION]
   ));
 }
+
+/** Opiniones recientes de la profesional (la base solo devuelve las suyas). Si falla, la IA sigue sin ellas. */
+export async function recentFeedback(professionalId, limit = 120) {
+  try {
+    const { withProfessional } = await import("./db.mjs");
+    const result = await withProfessional(professionalId, client => client.query(
+      `SELECT scope, meal_key, rating, reasons, meal_text FROM ai_feedback
+       WHERE professional_id = $1 AND created_at > now() - interval '120 days'
+       ORDER BY created_at DESC LIMIT $2`, [professionalId, limit]));
+    return result.rows;
+  } catch { return []; }
+}
