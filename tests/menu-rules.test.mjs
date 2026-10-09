@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { analyzeText, hasExactNutritionAmounts } from "../safety.mjs";
 import {
-  BASE_RECOMMENDATIONS, MAX_SAME_LUNCH_OR_DINNER, WEEKEND_FREE, applyFreeWeekend, describeRepeated, findElaborateLightMeals, findRepeatedMeals, isFreeMeal, lunchPlaceRule,
+  BASE_RECOMMENDATIONS, MAX_SAME_LUNCH_OR_DINNER, WEEKEND_FREE, applyFreeWeekend, cleanPlateWording, describeRepeated, findElaborateLightMeals, findRepeatedMeals, isFreeMeal, lunchPlaceRule,
   mergeRecommendations, menuStyleInstructions, weekendFreeText
 } from "../menu-rules.mjs";
 import { generateShoppingList, generateWeeklyMenu } from "../ai.mjs";
@@ -205,4 +205,30 @@ test("generateShoppingList: las comidas libres no llevan la pauta del fin de sem
     assert.equal(meals[5].breakfast, "Mate cocido con tostadas con queso y mermelada");
     assert.match(ai.calls[0].instructions, /Libre/);
   } finally { ai.restore(); }
+});
+
+// --- Redacción: sin «plato grande» al empezar ----------------------------------------------------
+test("cleanPlateWording cambia «plato grande de…» por «porción de…» y no toca el resto", () => {
+  assert.equal(cleanPlateWording("Plato grande de carne al horno con puré"), "Porción de carne al horno con puré");
+  assert.equal(cleanPlateWording("plato mediano de pollo con arroz"), "Porción de pollo con arroz");
+  assert.equal(cleanPlateWording("Plato grande con pollo y arroz"), "Pollo y arroz");
+  assert.equal(cleanPlateWording("Pollo con arroz y un plato chico de ensalada"), "Pollo con arroz y porción de ensalada");
+  for (const text of ["Pollo con arroz y ensalada", "Porción de carne con puré", "Ensalada de plato", ""]) assert.equal(cleanPlateWording(text), text);
+});
+
+test("generateWeeklyMenu y reemplazo de comida: la redacción sale sin «plato grande» y la IA recibe la regla", async () => {
+  const ai = mockAI([menu({ 0: { lunch: "Plato grande de carne al horno con puré", dinner: "Plato mediano de pollo con ensalada" } })]);
+  try {
+    const result = await generateWeeklyMenu(patient({ lunchPlace: "home" }));
+    assert.equal(result.days[0].lunch, "Porción de carne al horno con puré");
+    assert.equal(result.days[0].dinner, "Porción de pollo con ensalada");
+    assert.match(ai.calls[0].instructions, /Nunca escribas «plato grande»/);
+  } finally { ai.restore(); }
+  const single = mockAI([{ meal: "Plato grande de milanesa al horno con ensalada", reviewNote: "Revisá." }]);
+  try {
+    const { regenerateMeal } = await import("../ai.mjs");
+    const result = await regenerateMeal({ ...patient(), draft: menu() }, { dayIndex: 0, mealKey: "lunch", instruction: "" });
+    assert.equal(result.meal, "Porción de milanesa al horno con ensalada");
+    assert.match(single.calls[0].instructions, /Nunca escribas «plato grande»/);
+  } finally { single.restore(); }
 });

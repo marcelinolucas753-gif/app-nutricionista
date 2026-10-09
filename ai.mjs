@@ -9,7 +9,7 @@ import { calculatePatientRequirements, derivePortionGuidance } from "./nutrition
 import { DAY_NAMES, MEAL_SLOTS, analyzeDraft, analyzeText, describeConflict, hasExactNutritionAmounts } from "./safety.mjs";
 import { noteCall } from "./ai-metrics.mjs";
 import { LEARNING_INSTRUCTION } from "./learning.mjs";
-import { LUNCH_PLACES, applyFreeWeekend, baseRecommendationsFor, describeElaborate, describeRepeated, findElaborateLightMeals, findRepeatedMeals, isFreeMeal, lunchPlaceRule, menuStyleInstructions, mergeRecommendations, singleMealStyleRule } from "./menu-rules.mjs";
+import { LUNCH_PLACES, applyFreeWeekend, cleanPlateWording, baseRecommendationsFor, describeElaborate, describeRepeated, findElaborateLightMeals, findRepeatedMeals, isFreeMeal, lunchPlaceRule, menuStyleInstructions, mergeRecommendations, singleMealStyleRule } from "./menu-rules.mjs";
 
 const mealKeys = MEAL_SLOTS.map(([key]) => key);
 
@@ -127,7 +127,7 @@ export async function generateWeeklyMenu(patient, learning = null) {
 
 /** Aplica el fin de semana libre y las recomendaciones base; avisa lo que no se pudo mejorar. */
 function finishMenu(patient, output, issues = { elaborate: [], repeated: [] }) {
-  output.days.forEach((day, index) => { day.day = DAY_NAMES[index]; });
+  output.days.forEach((day, index) => { day.day = DAY_NAMES[index]; for (const key of mealKeys) if (typeof day[key] === "string") day[key] = cleanPlateWording(day[key]); });
   applyFreeWeekend(output, patient.condition);
   output.recommendations = mergeRecommendations(patient.condition, output.recommendations);
   const notes = [];
@@ -162,6 +162,7 @@ export async function regenerateMeal(patient, { dayIndex, mealKey, instruction, 
   for (let attempt = 0; attempt < 2; attempt++) {
     const result = await callOpenAI({ name: "replacement_meal", schema: mealSchema, instructions, input: mustFix ? { ...base, mustFix } : base });
     if (!result.meal?.trim() || hasExactNutritionAmounts(result.meal)) throw fail("La sugerencia no vino en medidas caseras. No se aplicó; volvé a intentar.", 502);
+    result.meal = cleanPlateWording(result.meal);
     const conflicts = analyzeText(patient, result.meal).filter(item => item.severity === "allergy");
     if (!conflicts.length) return result;
     mustFix = conflicts.map(item => `«${item.food}» coincide con la alergia o intolerancia «${item.restriction}»`);

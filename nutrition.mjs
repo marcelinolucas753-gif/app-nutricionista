@@ -51,10 +51,10 @@ const MEAL_SLOT_LABELS = {
 const MAIN_MEAL_KEYS = ["breakfast", "lunch", "dinner"];
 
 function portionTierForMainMeal(kcal) {
-  if (kcal < 350) return { tier: "liviano", hint: "plato chico: la porción principal del tamaño de una mano ahuecada, más una porción chica de proteína" };
-  if (kcal < 550) return { tier: "moderado", hint: "plato mediano (de unos 23 cm): una porción de proteína del tamaño de la palma de la mano, un puño de carbohidrato y vegetales a voluntad" };
-  if (kcal < 750) return { tier: "abundante", hint: "plato grande: una porción de proteína del tamaño de la palma y un puño y medio de carbohidrato, más vegetales" };
-  return { tier: "amplio", hint: "plato grande con un acompañamiento extra, por ejemplo una porción adicional de legumbre, cereal o pan" };
+  if (kcal < 350) return { tier: "liviano", hint: "comida de tamaño chico: la porción principal del tamaño de una mano ahuecada, más una porción chica de proteína" };
+  if (kcal < 550) return { tier: "moderado", hint: "comida de tamaño mediano (plato de unos 23 cm): una porción de proteína del tamaño de la palma de la mano, un puño de carbohidrato y vegetales a voluntad" };
+  if (kcal < 750) return { tier: "abundante", hint: "comida de tamaño grande: una porción de proteína del tamaño de la palma y un puño y medio de carbohidrato, más vegetales" };
+  return { tier: "amplio", hint: "comida de tamaño grande con un acompañamiento extra, por ejemplo una porción adicional de legumbre, cereal o pan" };
 }
 function portionTierForSnack(kcal) {
   if (kcal < 120) return { tier: "muy liviana", hint: "una fruta chica, o una infusión sola" };

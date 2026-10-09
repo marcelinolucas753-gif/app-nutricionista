@@ -127,6 +127,7 @@ export function menuStyleInstructions() {
     `Las colaciones (snack1 y snack2) deben ser: ${LIGHT_MEAL_STYLE.snack}`,
     "Almuerzo y cena pueden ser más variados, pero prácticos: pocos ingredientes, pasos simples y repetí ingredientes entre comidas para evitar desperdicio. Variá entre los días sin inventar platos complejos.",
     `No repitas exactamente el mismo almuerzo ni la misma cena más de ${MAX_SAME_LUNCH_OR_DINNER} veces de lunes a viernes; sí podés repetir ingredientes base y preparaciones parecidas para que sea práctico.`,
+    `${PLATE_WORDING_RULE}`,
     "Prioridad: adherencia y practicidad. Pensá primero qué puede preparar y comer esta persona sin esfuerzo en su rutina.",
     "Sábado y domingo (días 6 y 7): el almuerzo (lunch) y la cena (dinner) son LIBRES. En esos cuatro campos escribí solamente la palabra «Libre»; el sistema agrega la pauta. El desayuno, las colaciones y la merienda de esos días sí se proponen como el resto de la semana.",
     "En recommendations escribí solo 3 recomendaciones PERSONALIZADAS para esta persona (por ejemplo sobre su rutina, sus gustos o dificultades), sin repetir las de baseRecommendations."
@@ -143,7 +144,7 @@ export function singleMealStyleRule(mealKey) {
   if (mealKey === "breakfast") return `Esta comida es un desayuno: ${LIGHT_MEAL_STYLE.breakfast}`;
   if (mealKey === "merienda") return `Esta comida es una merienda: ${LIGHT_MEAL_STYLE.merienda}`;
   if (mealKey === "snack1" || mealKey === "snack2") return `Esta comida es una colación: ${LIGHT_MEAL_STYLE.snack}`;
-  return "Que sea práctica, de pocos ingredientes y de la zona.";
+  return `Que sea práctica, de pocos ingredientes y de la zona. ${PLATE_WORDING_RULE}`;
 }
 
 /** Recomendaciones base según la condición de la ficha. */
@@ -231,4 +232,22 @@ export function findRepeatedMeals(draft) {
 export function describeRepeated(item) {
   const days = item.dayIndexes.map(index => DAY_NAMES[index]).join(", ");
   return `El ${item.label} «${item.text}» se repite ${item.dayIndexes.length} días de lunes a viernes (${days}); cambialo en al menos ${item.dayIndexes.length - MAX_SAME_LUNCH_OR_DINNER} de esos días por otra opción práctica.`;
+}
+
+// --- Redacción: el tamaño del plato no va en el texto de la comida -------------------------------
+export const PLATE_WORDING_RULE = "Redacción de cada comida: empezá siempre por el alimento o la porción, por ejemplo «Porción de carne al horno con puré» o «Pollo con arroz y ensalada». Nunca escribas «plato grande», «plato mediano» ni «plato chico» en el texto: el tamaño de la porción se refleja con la cantidad de alimentos, no con el nombre del plato.";
+
+const PLATE_SIZE = "(?:grande|mediano|mediana|chico|chica|pequeño|pequeña|amplio|abundante)";
+const PLATE_PREFIX = new RegExp(`^\\s*(?:un\\s+)?plato\\s+${PLATE_SIZE}\\s+(?:de\\s+|con\\s+)?`, "i");
+const PLATE_ANYWHERE = new RegExp(`\\b(?:un\\s+)?plato\\s+${PLATE_SIZE}\\s+de\\b`, "gi");
+
+/** «Plato grande de carne…» → «Porción de carne…». La IA a veces copia el tamaño del plato como título. */
+export function cleanPlateWording(text) {
+  let out = String(text ?? "");
+  const lead = out.match(PLATE_PREFIX);
+  if (lead) {
+    const rest = out.slice(lead[0].length);
+    out = /\bde\s+$/i.test(lead[0]) ? `Porción de ${rest}` : (rest ? rest[0].toUpperCase() + rest.slice(1) : "");
+  }
+  return out.replace(PLATE_ANYWHERE, "porción de");
 }
