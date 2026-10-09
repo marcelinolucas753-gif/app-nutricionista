@@ -9,7 +9,7 @@ import { calculatePatientRequirements, derivePortionGuidance } from "./nutrition
 import { DAY_NAMES, MEAL_SLOTS, analyzeDraft, analyzeText, describeConflict, hasExactNutritionAmounts } from "./safety.mjs";
 import { noteCall } from "./ai-metrics.mjs";
 import { LEARNING_INSTRUCTION } from "./learning.mjs";
-import { LUNCH_PLACES, applyFreeWeekend, cleanPlateWording, baseRecommendationsFor, describeElaborate, describeRepeated, findElaborateLightMeals, findRepeatedMeals, isFreeMeal, lunchPlaceRule, menuStyleInstructions, mergeRecommendations, singleMealStyleRule } from "./menu-rules.mjs";
+import { LUNCH_PLACES, applyFreeWeekend, cleanPlateWording, baseRecommendationsFor, describeElaborate, describeRepeated, describeSnackProblem, findElaborateLightMeals, findRepeatedMeals, findSnackProblems, SNACK_SHORT, isFreeMeal, lunchPlaceRule, menuStyleInstructions, mergeRecommendations, singleMealStyleRule } from "./menu-rules.mjs";
 
 const mealKeys = MEAL_SLOTS.map(([key]) => key);
 
@@ -111,8 +111,8 @@ export async function generateWeeklyMenu(patient, learning = null) {
     const output = await callOpenAI({ name: "weekly_meal_draft", schema: weeklySchema, instructions, input: mustFix ? { ...base, mustFix } : base });
     checkMenuStructure(output);
     const allergies = analyzeDraft(patient, output).filter(item => item.severity === "allergy");
-    const issues = { elaborate: findElaborateLightMeals(output), repeated: findRepeatedMeals(output) };
-    const hasIssues = issues.elaborate.length > 0 || issues.repeated.length > 0;
+    const issues = { elaborate: findElaborateLightMeals(output), repeated: findRepeatedMeals(output), snacks: findSnackProblems(output) };
+    const hasIssues = issues.elaborate.length > 0 || issues.repeated.length > 0 || issues.snacks.length > 0;
     if (!allergies.length) {
       if (!hasIssues || attempt === 1) return finishMenu(patient, output, issues);
       fallback = { output, issues }; // borrador seguro, por si el segundo intento trae una alergia
@@ -120,19 +120,20 @@ export async function generateWeeklyMenu(patient, learning = null) {
       if (fallback) return finishMenu(patient, fallback.output, fallback.issues);
       throw fail(CONFLICT_ERROR, 502);
     }
-    mustFix = [...allergies.map(describeConflict), ...issues.elaborate.map(describeElaborate), ...issues.repeated.map(describeRepeated)];
+    mustFix = [...allergies.map(describeConflict), ...issues.elaborate.map(describeElaborate), ...issues.repeated.map(describeRepeated), ...issues.snacks.map(describeSnackProblem)];
   }
   throw fail(CONFLICT_ERROR, 502);
 }
 
 /** Aplica el fin de semana libre y las recomendaciones base; avisa lo que no se pudo mejorar. */
-function finishMenu(patient, output, issues = { elaborate: [], repeated: [] }) {
+function finishMenu(patient, output, issues = { elaborate: [], repeated: [], snacks: [] }) {
   output.days.forEach((day, index) => { day.day = DAY_NAMES[index]; for (const key of mealKeys) if (typeof day[key] === "string") day[key] = cleanPlateWording(day[key]); });
   applyFreeWeekend(output, patient.condition);
   output.recommendations = mergeRecommendations(patient.condition, output.recommendations);
   const notes = [];
   if (issues.elaborate.length) notes.push(`Revisá estas comidas livianas, que podrían ser más simples: ${issues.elaborate.map(item => `${item.day || `día ${item.dayIndex + 1}`} (${SLOT_SHORT[item.slot]})`).join(", ")}.`);
   for (const item of issues.repeated) notes.push(`Se repite el mismo ${item.label} (${item.dayIndexes.length} días de lunes a viernes): «${item.text}». Conviene variarlo.`);
+  if (issues.snacks?.length) notes.push(`Revisá estas colaciones/meriendas, que conviene completar (yogur con fruta, cereales o granola; infusión con algo aparte): ${issues.snacks.map(item => `${item.day || `día ${item.dayIndex + 1}`} (${SNACK_SHORT[item.slot]})`).join(", ")}.`);
   if (!patient.lunchPlace) notes.push("No se indicó dónde almuerza la persona: completalo en la ficha para que el almuerzo se adapte a su rutina.");
   output.reviewNotes = [...notes, ...(Array.isArray(output.reviewNotes) ? output.reviewNotes : [])].slice(0, 5);
   return output;
@@ -164,8 +165,10 @@ export async function regenerateMeal(patient, { dayIndex, mealKey, instruction, 
     if (!result.meal?.trim() || hasExactNutritionAmounts(result.meal)) throw fail("La sugerencia no vino en medidas caseras. No se aplicó; volvé a intentar.", 502);
     result.meal = cleanPlateWording(result.meal);
     const conflicts = analyzeText(patient, result.meal).filter(item => item.severity === "allergy");
-    if (!conflicts.length) return result;
-    mustFix = conflicts.map(item => `«${item.food}» coincide con la alergia o intolerancia «${item.restriction}»`);
+    const snackProblems = findSnackProblems({ days: [{ day: day.day, [mealKey]: result.meal }] });
+    if (!conflicts.length && (!snackProblems.length || attempt === 1)) return result;
+    if (attempt === 1) throw fail(CONFLICT_ERROR, 502); // la alergia persiste: no se aplica nada
+    mustFix = [...conflicts.map(item => `«${item.food}» coincide con la alergia o intolerancia «${item.restriction}»`), ...snackProblems.map(describeSnackProblem)];
   }
   throw fail(CONFLICT_ERROR, 502);
 }

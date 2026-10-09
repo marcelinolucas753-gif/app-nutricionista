@@ -36,8 +36,8 @@ export const FOODS_AVOID_BY_DEFAULT = [
 /** Cómo deben ser las comidas livianas (desayuno, merienda y colaciones). */
 export const LIGHT_MEAL_STYLE = {
   breakfast: "infusión (mate cocido, té, café con leche o leche) más tostadas o pan con queso, mermelada o dulce; a veces huevos revueltos, yogur o una fruta. Se prepara en menos de 10 minutos. Sin verduras cocidas, sin tortillas, tartas, guisos ni preparaciones al horno.",
-  merienda: "igual de simple que el desayuno: infusión más tostadas o pan con queso o mermelada, galletitas, yogur o una fruta. Sin preparaciones elaboradas.",
-  snack: "una fruta, un yogur (solo o con cereal) o un sándwich simple (pan con queso, jamón cocido, huevo duro o tomate)."
+  merienda: "igual de simple que el desayuno, y siempre completa: o bien una infusión (mate cocido, té, café con leche) acompañada de algo aparte, como tostadas o pan con queso o mermelada, un sándwich simple o galletitas; o bien un yogur con fruta, cereales o granola (sin infusión). Nunca un yogur chico solo ni yogur junto con una infusión. Sin preparaciones elaboradas.",
+  snack: "completa y simple, a elegir entre: una fruta; un yogur con fruta, cereales (copos, avena) o granola; o un sándwich simple (pan con queso, jamón cocido, huevo duro o tomate). Nunca un yogur chico solo ni yogur junto con una infusión; si lleva infusión, que sea con algo aparte como tostadas o un sándwich, sin yogur."
 };
 
 /** Dónde almuerza la persona (lo que aparece en la ficha) y qué le pedimos a la IA. */
@@ -140,6 +140,8 @@ export function lunchPlaceRule(lunchPlace) {
 }
 
 /** Regla de estilo para reemplazar una sola comida. */
+export const SNACK_SHORT = { snack1: "colación de la mañana", snack2: "colación de la tarde", merienda: "merienda" };
+
 export function singleMealStyleRule(mealKey) {
   if (mealKey === "breakfast") return `Esta comida es un desayuno: ${LIGHT_MEAL_STYLE.breakfast}`;
   if (mealKey === "merienda") return `Esta comida es una merienda: ${LIGHT_MEAL_STYLE.merienda}`;
@@ -207,6 +209,42 @@ export function findElaborateLightMeals(draft) {
 
 export function describeElaborate(item) {
   return `${item.day || `Día ${item.dayIndex + 1}`}: ${SLOT_LABELS[item.slot]} usa «${item.words.join("», «")}»; reemplazalo por algo simple y rápido (${item.slot === "breakfast" ? LIGHT_MEAL_STYLE.breakfast : LIGHT_MEAL_STYLE.merienda})`;
+}
+
+// --- Colaciones y merienda: yogur completo o infusión con algo aparte ----------------------------
+const SNACK_SLOTS = ["snack1", "snack2", "merienda"];
+const SNACK_LABELS = { snack1: "la colación de la mañana", snack2: "la colación de la tarde", merienda: "la merienda" };
+const word = list => new RegExp(`(?<![a-z0-9])(?:${list.join("|")})(?:es|s)?(?![a-z0-9])`);
+const YOGURT = word(["yogur", "yogurt", "yoghurt"]);
+const INFUSION = word(["te", "mate", "mate cocido", "cafe", "infusion", "cocido", "cafe con leche", "tizana"]);
+const YOGURT_EXTRAS = word(["fruta", "banana", "manzana", "naranja", "mandarina", "pera", "durazno", "frutilla", "uva", "kiwi", "anana", "melon", "sandia", "cereal", "copo", "avena", "granola", "muesli", "semilla", "chia", "nuez", "almendra"]);
+const SOLID_FOOD = word(["pan", "tostada", "sandwich", "sanguche", "galletita", "galleta", "criollita", "queso", "jamon", "huevo", "budin", "bizcocho", "medialuna", "tortita", "mermelada", "dulce", "fruta", "banana", "manzana", "cereal", "granola", "barra"]);
+
+/** Colaciones y merienda mal armadas: yogur con infusión, yogur solo o infusión sin nada para comer. */
+export function findSnackProblems(draft) {
+  const found = [];
+  (draft?.days || []).forEach((day, index) => {
+    for (const slot of SNACK_SLOTS) {
+      const raw = String(day?.[slot] || "");
+      const text = normalizeText(raw);
+      const yogurt = YOGURT.test(text), infusion = INFUSION.test(text);
+      let problem = null;
+      if (yogurt && infusion) problem = "yogur_con_infusion";
+      else if (yogurt && !YOGURT_EXTRAS.test(text)) problem = "yogur_solo";
+      else if (infusion && !SOLID_FOOD.test(text)) problem = "infusion_sola";
+      if (problem) found.push({ dayIndex: index, day: day?.day, slot, text: raw.trim(), problem });
+    }
+  });
+  return found;
+}
+
+const SNACK_PROBLEM_TEXT = {
+  yogur_con_infusion: "mezcla yogur con una infusión; dejá una sola cosa: yogur con fruta, cereales o granola, o la infusión con algo aparte (tostadas o un sándwich simple)",
+  yogur_solo: "es un yogur solo; completalo con fruta, cereales o granola",
+  infusion_sola: "es una infusión sin nada para comer; acompañala con tostadas, pan con queso o mermelada, o un sándwich simple"
+};
+export function describeSnackProblem(item) {
+  return `${item.day || `Día ${item.dayIndex + 1}`}: ${SNACK_LABELS[item.slot]} («${item.text}») ${SNACK_PROBLEM_TEXT[item.problem]}`;
 }
 
 const REPEAT_SLOTS = [["lunch", "almuerzo"], ["dinner", "cena"]];

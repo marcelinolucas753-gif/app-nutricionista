@@ -60,7 +60,7 @@ function mockAI(response) {
 const LUNCHES = ["Pollo con arroz", "Guiso de lentejas", "Milanesa al horno", "Fideos con tuco", "Carne al horno", "Asado", "Pizza"];
 const weekly = () => ({
   intro: "x", recommendations: ["Tomá agua.", "Llevá vianda.", "Variá las frutas."], reviewNotes: ["Validá alergias."],
-  days: LUNCHES.map((lunch, i) => ({ day: "d", breakfast: "Mate cocido con tostadas", snack1: "Fruta", lunch, snack2: "Yogur", merienda: "Té con pan", dinner: `Cena ${i}`, extra: "" }))
+  days: LUNCHES.map((lunch, i) => ({ day: "d", breakfast: "Mate cocido con tostadas", snack1: "Fruta", lunch, snack2: "Yogur con granola", merienda: "Té con pan", dinner: `Cena ${i}`, extra: "" }))
 });
 const patient = { age: 40, condition: "general", goal: "Ordenar horarios", allergies: "", avoids: "", lunchPlace: "home", draft: weekly() };
 const learning = buildLearning([row("down", "breakfast", "Tortilla de acelga", ["muy_elaborado"])], {});

@@ -2,8 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { analyzeText, hasExactNutritionAmounts } from "../safety.mjs";
 import {
-  BASE_RECOMMENDATIONS, MAX_SAME_LUNCH_OR_DINNER, WEEKEND_FREE, applyFreeWeekend, cleanPlateWording, describeRepeated, findElaborateLightMeals, findRepeatedMeals, isFreeMeal, lunchPlaceRule,
-  mergeRecommendations, menuStyleInstructions, weekendFreeText
+  BASE_RECOMMENDATIONS, MAX_SAME_LUNCH_OR_DINNER, WEEKEND_FREE, applyFreeWeekend, cleanPlateWording, describeRepeated, findElaborateLightMeals, findRepeatedMeals, findSnackProblems, describeSnackProblem, isFreeMeal, lunchPlaceRule,
+  mergeRecommendations, menuStyleInstructions, singleMealStyleRule, weekendFreeText
 } from "../menu-rules.mjs";
 import { generateShoppingList, generateWeeklyMenu } from "../ai.mjs";
 
@@ -231,4 +231,56 @@ test("generateWeeklyMenu y reemplazo de comida: la redacción sale sin «plato g
     assert.equal(result.meal, "Porción de milanesa al horno con ensalada");
     assert.match(single.calls[0].instructions, /Nunca escribas «plato grande»/);
   } finally { single.restore(); }
+});
+
+// --- Colaciones y merienda: yogur completo o infusión con algo aparte ----------------------------
+test("findSnackProblems marca yogur con infusión, yogur solo e infusión sola, y acepta las combinaciones buenas", () => {
+  assert.deepEqual(findSnackProblems(menu()), []);
+  for (const good of ["Yogur con granola y banana", "Yogur con copos de maíz", "Té con tostadas y queso", "Mate cocido con un sándwich de jamón y queso", "Café con leche con galletitas", "Una manzana", "Sándwich de queso y tomate"]) {
+    assert.deepEqual(findSnackProblems(menu({ 1: { snack2: good } })), [], good);
+  }
+  const bad = menu({ 0: { snack2: "Yogur chico con té" }, 2: { merienda: "Un yogur" }, 3: { merienda: "Mate cocido" }, 4: { snack1: "Yogur con mate" } });
+  const found = findSnackProblems(bad);
+  assert.deepEqual(found.map(item => [item.dayIndex, item.slot, item.problem]), [
+    [0, "snack2", "yogur_con_infusion"], [2, "merienda", "yogur_solo"], [3, "merienda", "infusion_sola"], [4, "snack1", "yogur_con_infusion"]
+  ]);
+  assert.match(describeSnackProblem(found[0]), /colación de la tarde.*mezcla yogur con una infusión/);
+});
+
+test("el estilo de colaciones y merienda pide yogur completo o infusión con algo aparte", () => {
+  const text = menuStyleInstructions();
+  assert.match(text, /Nunca un yogur chico solo ni yogur junto con una infusión/);
+  assert.match(singleMealStyleRule("snack2"), /granola/);
+});
+
+test("generateWeeklyMenu: corrige «yogur chico con té» con un reintento", async () => {
+  const ai = mockAI([menu({ 1: { snack2: "Yogur chico con té" } }), menu({ 1: { snack2: "Yogur con granola y banana" } })]);
+  try {
+    const result = await generateWeeklyMenu(patient({ lunchPlace: "home" }));
+    assert.equal(ai.calls.length, 2);
+    assert.ok(ai.calls[1].input.mustFix.some(item => /Martes/.test(item) && /yogur/i.test(item)));
+    assert.equal(result.days[1].snack2, "Yogur con granola y banana");
+    assert.ok(!result.reviewNotes.some(note => /colaciones/.test(note)));
+  } finally { ai.restore(); }
+});
+
+test("generateWeeklyMenu: si la IA insiste con una merienda incompleta, entrega el menú con un aviso", async () => {
+  const bad = menu({ 3: { merienda: "Un yogur" } });
+  const ai = mockAI([bad, bad]);
+  try {
+    const result = await generateWeeklyMenu(patient({ lunchPlace: "home" }));
+    assert.equal(ai.calls.length, 2);
+    assert.ok(result.reviewNotes.some(note => /Jueves \(merienda\)/.test(note)));
+  } finally { ai.restore(); }
+});
+
+test("reemplazar una colación: vuelve a pedir si viene «yogur con infusión»", async () => {
+  const ai = mockAI([{ meal: "Yogur chico con té", reviewNote: "x" }, { meal: "Té con tostadas y queso", reviewNote: "x" }]);
+  try {
+    const { regenerateMeal } = await import("../ai.mjs");
+    const result = await regenerateMeal({ ...patient(), draft: menu() }, { dayIndex: 0, mealKey: "snack2", instruction: "" });
+    assert.equal(ai.calls.length, 2);
+    assert.equal(result.meal, "Té con tostadas y queso");
+    assert.ok(ai.calls[1].input.mustFix[0].includes("yogur"));
+  } finally { ai.restore(); }
 });
