@@ -87,3 +87,11 @@
 .feedback-reasons { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
 .feedback-reasons label { display: inline-flex; align-items: center; gap: 4px; margin: 0; font-size: 12px; }
 .plan-feedback { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+.quick-options { display: grid; gap: 8px; margin-top: 6px; }
+.quick-options > strong { font-size: 13px; }
+.quick-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.quick-chip { display: inline-flex; flex-direction: row; align-items: center; gap: 4px; width: auto; margin: 0; padding: 4px 10px; border: 1px solid var(--border); border-radius: 999px; font-size: 12px; font-weight: 600; line-height: 1.3; cursor: pointer; background: var(--bg-panel); }
+.quick-chip input { width: auto; margin: 0; padding: 0; flex: none; }
+.quick-chip:has(input:checked) { background: var(--primary-light); border-color: var(--primary); }
+.quick-text { width: 100%; }
+.quick-buttons { display: flex; flex-wrap: wrap; gap: 8px; }

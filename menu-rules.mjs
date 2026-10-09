@@ -99,11 +99,18 @@ export const ELABORATE_WORDS = [
 ];
 
 /**
+ * Cuántas veces puede repetirse EXACTAMENTE el mismo almuerzo (o la misma cena)
+ * de lunes a viernes. Repetir hasta 2 veces es práctico (se cocina una vez y se
+ * come dos); más que eso, la app le pide a la IA que lo cambie.
+ */
+export const MAX_SAME_LUNCH_OR_DINNER = 2;
+
+/**
  * ──────────────────────────────────────────────────────────────────────────
  *  PARTE 2 · LÓGICA (no hace falta tocarla)
  * ──────────────────────────────────────────────────────────────────────────
  */
-import { normalizeText } from "./safety.mjs";
+import { DAY_NAMES, normalizeText } from "./safety.mjs";
 
 const WEEKEND_INDEXES = [5, 6];
 const WEEKEND_SLOTS = ["lunch", "dinner"];
@@ -119,6 +126,7 @@ export function menuStyleInstructions() {
     `La merienda (merienda) debe ser: ${LIGHT_MEAL_STYLE.merienda}`,
     `Las colaciones (snack1 y snack2) deben ser: ${LIGHT_MEAL_STYLE.snack}`,
     "Almuerzo y cena pueden ser más variados, pero prácticos: pocos ingredientes, pasos simples y repetí ingredientes entre comidas para evitar desperdicio. Variá entre los días sin inventar platos complejos.",
+    `No repitas exactamente el mismo almuerzo ni la misma cena más de ${MAX_SAME_LUNCH_OR_DINNER} veces de lunes a viernes; sí podés repetir ingredientes base y preparaciones parecidas para que sea práctico.`,
     "Prioridad: adherencia y practicidad. Pensá primero qué puede preparar y comer esta persona sin esfuerzo en su rutina.",
     "Sábado y domingo (días 6 y 7): el almuerzo (lunch) y la cena (dinner) son LIBRES. En esos cuatro campos escribí solamente la palabra «Libre»; el sistema agrega la pauta. El desayuno, las colaciones y la merienda de esos días sí se proponen como el resto de la semana.",
     "En recommendations escribí solo 3 recomendaciones PERSONALIZADAS para esta persona (por ejemplo sobre su rutina, sus gustos o dificultades), sin repetir las de baseRecommendations."
@@ -147,6 +155,9 @@ export function baseRecommendationsFor(condition) {
 export function weekendFreeText(condition) {
   return WEEKEND_FREE[condition] || WEEKEND_FREE.general;
 }
+
+/** ¿Esta comida es la pauta libre del fin de semana (empieza con «Libre»)? */
+export function isFreeMeal(text) { return /^libre\b/i.test(String(text || "").trim()); }
 
 /** Fuerza «Libre» + pauta en almuerzo y cena de sábado y domingo. */
 export function applyFreeWeekend(draft, condition) {
@@ -195,4 +206,29 @@ export function findElaborateLightMeals(draft) {
 
 export function describeElaborate(item) {
   return `${item.day || `Día ${item.dayIndex + 1}`}: ${SLOT_LABELS[item.slot]} usa «${item.words.join("», «")}»; reemplazalo por algo simple y rápido (${item.slot === "breakfast" ? LIGHT_MEAL_STYLE.breakfast : LIGHT_MEAL_STYLE.merienda})`;
+}
+
+const REPEAT_SLOTS = [["lunch", "almuerzo"], ["dinner", "cena"]];
+const WEEKDAY_INDEXES = [0, 1, 2, 3, 4];
+
+/** Almuerzos o cenas idénticos que se repiten de lunes a viernes más veces de lo permitido. */
+export function findRepeatedMeals(draft) {
+  const found = [];
+  for (const [slot, label] of REPEAT_SLOTS) {
+    const groups = new Map();
+    for (const index of WEEKDAY_INDEXES) {
+      const text = draft?.days?.[index]?.[slot];
+      const key = typeof text === "string" && !isFreeMeal(text) ? normalizeText(text) : "";
+      if (key) groups.set(key, [...(groups.get(key) || []), index]);
+    }
+    for (const indexes of groups.values()) {
+      if (indexes.length > MAX_SAME_LUNCH_OR_DINNER) found.push({ slot, label, text: draft.days[indexes[0]][slot], dayIndexes: indexes });
+    }
+  }
+  return found;
+}
+
+export function describeRepeated(item) {
+  const days = item.dayIndexes.map(index => DAY_NAMES[index]).join(", ");
+  return `El ${item.label} «${item.text}» se repite ${item.dayIndexes.length} días de lunes a viernes (${days}); cambialo en al menos ${item.dayIndexes.length - MAX_SAME_LUNCH_OR_DINNER} de esos días por otra opción práctica.`;
 }

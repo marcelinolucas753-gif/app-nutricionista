@@ -2,18 +2,21 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { analyzeText, hasExactNutritionAmounts } from "../safety.mjs";
 import {
-  BASE_RECOMMENDATIONS, WEEKEND_FREE, applyFreeWeekend, findElaborateLightMeals, lunchPlaceRule,
+  BASE_RECOMMENDATIONS, MAX_SAME_LUNCH_OR_DINNER, WEEKEND_FREE, applyFreeWeekend, describeRepeated, findElaborateLightMeals, findRepeatedMeals, isFreeMeal, lunchPlaceRule,
   mergeRecommendations, menuStyleInstructions, weekendFreeText
 } from "../menu-rules.mjs";
-import { generateWeeklyMenu } from "../ai.mjs";
+import { generateShoppingList, generateWeeklyMenu } from "../ai.mjs";
 
 const DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+// Cada día tiene su almuerzo y su cena, así el menú de prueba no cuenta como «repetido».
+const LUNCHES = ["Pollo con arroz y ensalada", "Guiso de lentejas", "Milanesa al horno con puré", "Fideos con salsa y queso", "Carne al horno con verduras", "Asado", "Pizza"];
+const DINNERS = ["Tortilla de papa", "Sopa de verduras", "Tarta de zapallo", "Revuelto de huevo con ensalada", "Pollo al horno con calabaza", "Empanadas", "Sándwiches"];
 function menu(overrides = {}) {
   return {
     intro: "Propuesta semanal.",
     days: DAYS.map((day, index) => ({
-      day, breakfast: "Mate cocido con tostadas con queso y mermelada", snack1: "Una manzana", lunch: "Pollo con arroz y ensalada",
-      snack2: "Un yogur con cereal", merienda: "Té con pan y dulce", dinner: "Tortilla de papa", extra: "", ...(overrides[index] || {})
+      day, breakfast: "Mate cocido con tostadas con queso y mermelada", snack1: "Una manzana", lunch: LUNCHES[index],
+      snack2: "Un yogur con cereal", merienda: "Té con pan y dulce", dinner: DINNERS[index], extra: "", ...(overrides[index] || {})
     })),
     recommendations: ["Llevá la vianda lista la noche anterior.", "Respetá los horarios de las comidas y no te saltees el desayuno ni la merienda.", "Probá variar las frutas."],
     reviewNotes: ["Validá alergias, medicación y adecuación individual."]
@@ -42,7 +45,7 @@ test("sábado y domingo quedan libres con pauta; lunes a viernes no se tocan", (
     assert.ok(draft.days[index].lunch.startsWith("Libre"));
     assert.equal(draft.days[index].breakfast, "Mate cocido con tostadas con queso y mermelada");
   }
-  for (const index of [0, 1, 2, 3, 4]) assert.equal(draft.days[index].lunch, "Pollo con arroz y ensalada");
+  for (const index of [0, 1, 2, 3, 4]) assert.equal(draft.days[index].lunch, LUNCHES[index]);
   assert.notEqual(weekendFreeText("diabetes2"), weekendFreeText("general"));
   assert.equal(weekendFreeText("inexistente"), WEEKEND_FREE.general);
 });
@@ -141,5 +144,65 @@ test("generateWeeklyMenu: una alergia que persiste en ambos intentos no devuelve
   const ai = mockAI([bad, bad]);
   try {
     await assert.rejects(() => generateWeeklyMenu(patient({ allergies: "pescado" })), /alergias o intolerancias/);
+  } finally { ai.restore(); }
+});
+
+// --- Repetición de almuerzos y cenas ------------------------------------------------------------
+const same = (slot, text, days) => Object.fromEntries(days.map(index => [index, { [slot]: text }]));
+
+test("findRepeatedMeals: permite repetir hasta el máximo y marca lo que lo supera", () => {
+  assert.equal(MAX_SAME_LUNCH_OR_DINNER, 2);
+  assert.deepEqual(findRepeatedMeals(menu()), []);
+  assert.deepEqual(findRepeatedMeals(menu(same("lunch", "Pollo con arroz", [0, 1]))), []);
+  const found = findRepeatedMeals(menu(same("lunch", "Pollo con arroz", [0, 1, 3])));
+  assert.equal(found.length, 1);
+  assert.deepEqual([found[0].slot, found[0].dayIndexes], ["lunch", [0, 1, 3]]);
+  assert.match(describeRepeated(found[0]), /almuerzo «Pollo con arroz» se repite 3 días/);
+});
+
+test("findRepeatedMeals: ignora diferencias de mayúsculas y tildes, el fin de semana y las comidas libres", () => {
+  const draft = menu({ 0: { dinner: "Sopa de Verduras" }, 1: { dinner: "sopa de verduras" }, 2: { dinner: "Sopa de verdúras" }, 5: { lunch: "Pollo con arroz" }, 6: { lunch: "Pollo con arroz" } });
+  assert.equal(findRepeatedMeals(draft).length, 1);
+  const libres = menu(same("lunch", "Libre (elegí lo que te guste)", [0, 1, 2, 3, 4]));
+  assert.deepEqual(findRepeatedMeals(libres), []);
+  assert.equal(isFreeMeal("Libre: elegí lo que prefieras"), true);
+  assert.equal(isFreeMeal("Librito de pollo"), false);
+});
+
+test("generateWeeklyMenu: pide variar un almuerzo repetido y usa la versión corregida", async () => {
+  const ai = mockAI([menu(same("lunch", "Pollo con arroz", [0, 1, 2, 3])), menu()]);
+  try {
+    const result = await generateWeeklyMenu(patient({ lunchPlace: "home" }));
+    assert.equal(ai.calls.length, 2);
+    assert.ok(ai.calls[1].input.mustFix.some(item => /Pollo con arroz/.test(item) && /almuerzo/.test(item)));
+    assert.equal(result.days[3].lunch, LUNCHES[3]);
+    assert.ok(!result.reviewNotes.some(note => /Se repite/.test(note)));
+  } finally { ai.restore(); }
+});
+
+test("generateWeeklyMenu: si la IA insiste con la repetición, entrega el menú con un aviso", async () => {
+  const bad = menu(same("dinner", "Sopa de verduras", [0, 1, 2]));
+  const ai = mockAI([bad, bad]);
+  try {
+    const result = await generateWeeklyMenu(patient({ lunchPlace: "home" }));
+    assert.equal(ai.calls.length, 2);
+    assert.ok(result.reviewNotes.some(note => /Se repite el mismo cena \(3 días/.test(note)));
+  } finally { ai.restore(); }
+});
+
+// --- Lista de compras ---------------------------------------------------------------------------
+test("generateShoppingList: las comidas libres no llevan la pauta del fin de semana a la lista", async () => {
+  const shopping = { sections: [], reviewNote: "Cantidades orientativas." };
+  const ai = mockAI([shopping]);
+  try {
+    const draft = applyFreeWeekend(menu(), "diabetes2");
+    await generateShoppingList(patient(), draft.days);
+    const meals = ai.calls[0].input.meals;
+    assert.match(meals[5].lunch, /^Libre/);
+    assert.match(meals[5].dinner, /no sumar nada/);
+    assert.ok(!meals[5].lunch.includes(weekendFreeText("diabetes2").slice(20)));
+    assert.equal(meals[0].lunch, LUNCHES[0]);
+    assert.equal(meals[5].breakfast, "Mate cocido con tostadas con queso y mermelada");
+    assert.match(ai.calls[0].instructions, /Libre/);
   } finally { ai.restore(); }
 });

@@ -8,7 +8,7 @@ import { fail } from "./validation.mjs";
 import { calculatePatientRequirements, derivePortionGuidance } from "./nutrition.mjs";
 import { DAY_NAMES, MEAL_SLOTS, analyzeDraft, analyzeText, describeConflict, hasExactNutritionAmounts } from "./safety.mjs";
 import { noteCall } from "./ai-metrics.mjs";
-import { LUNCH_PLACES, applyFreeWeekend, baseRecommendationsFor, describeElaborate, findElaborateLightMeals, lunchPlaceRule, menuStyleInstructions, mergeRecommendations, singleMealStyleRule } from "./menu-rules.mjs";
+import { LUNCH_PLACES, applyFreeWeekend, baseRecommendationsFor, describeElaborate, describeRepeated, findElaborateLightMeals, findRepeatedMeals, isFreeMeal, lunchPlaceRule, menuStyleInstructions, mergeRecommendations, singleMealStyleRule } from "./menu-rules.mjs";
 
 const mealKeys = MEAL_SLOTS.map(([key]) => key);
 
@@ -109,27 +109,28 @@ export async function generateWeeklyMenu(patient) {
     const output = await callOpenAI({ name: "weekly_meal_draft", schema: weeklySchema, instructions, input: mustFix ? { ...base, mustFix } : base });
     checkMenuStructure(output);
     const allergies = analyzeDraft(patient, output).filter(item => item.severity === "allergy");
-    const elaborate = findElaborateLightMeals(output);
+    const issues = { elaborate: findElaborateLightMeals(output), repeated: findRepeatedMeals(output) };
+    const hasIssues = issues.elaborate.length > 0 || issues.repeated.length > 0;
     if (!allergies.length) {
-      if (!elaborate.length) return finishMenu(patient, output, []);
-      if (attempt === 1) return finishMenu(patient, output, elaborate);
-      fallback = { output, elaborate }; // borrador seguro, por si el segundo intento trae una alergia
+      if (!hasIssues || attempt === 1) return finishMenu(patient, output, issues);
+      fallback = { output, issues }; // borrador seguro, por si el segundo intento trae una alergia
     } else if (attempt === 1) {
-      if (fallback) return finishMenu(patient, fallback.output, fallback.elaborate);
+      if (fallback) return finishMenu(patient, fallback.output, fallback.issues);
       throw fail(CONFLICT_ERROR, 502);
     }
-    mustFix = [...allergies.map(describeConflict), ...elaborate.map(describeElaborate)];
+    mustFix = [...allergies.map(describeConflict), ...issues.elaborate.map(describeElaborate), ...issues.repeated.map(describeRepeated)];
   }
   throw fail(CONFLICT_ERROR, 502);
 }
 
-/** Aplica el fin de semana libre y las recomendaciones base; avisa lo que no se pudo simplificar. */
-function finishMenu(patient, output, stillElaborate) {
+/** Aplica el fin de semana libre y las recomendaciones base; avisa lo que no se pudo mejorar. */
+function finishMenu(patient, output, issues = { elaborate: [], repeated: [] }) {
   output.days.forEach((day, index) => { day.day = DAY_NAMES[index]; });
   applyFreeWeekend(output, patient.condition);
   output.recommendations = mergeRecommendations(patient.condition, output.recommendations);
   const notes = [];
-  if (stillElaborate.length) notes.push(`Revisá estas comidas livianas, que podrían ser más simples: ${stillElaborate.map(item => `${item.day || `día ${item.dayIndex + 1}`} (${SLOT_SHORT[item.slot]})`).join(", ")}.`);
+  if (issues.elaborate.length) notes.push(`Revisá estas comidas livianas, que podrían ser más simples: ${issues.elaborate.map(item => `${item.day || `día ${item.dayIndex + 1}`} (${SLOT_SHORT[item.slot]})`).join(", ")}.`);
+  for (const item of issues.repeated) notes.push(`Se repite el mismo ${item.label} (${item.dayIndexes.length} días de lunes a viernes): «${item.text}». Conviene variarlo.`);
   if (!patient.lunchPlace) notes.push("No se indicó dónde almuerza la persona: completalo en la ficha para que el almuerzo se adapte a su rutina.");
   output.reviewNotes = [...notes, ...(Array.isArray(output.reviewNotes) ? output.reviewNotes : [])].slice(0, 5);
   return output;
@@ -195,12 +196,15 @@ export async function suggestSubstitutions(patient, { meal, ingredient }) {
   throw fail(CONFLICT_ERROR, 502);
 }
 
+// Las comidas libres del fin de semana no llevan compras: la IA no debe ver la pauta larga.
+const FREE_MEAL_FOR_SHOPPING = "Libre (la persona elige): no sumar nada a la lista";
+
 export async function generateShoppingList(patient, days) {
   if (!Array.isArray(days) || !days.length || days.length > 7) throw fail("No hay un menú semanal para armar la lista.");
-  const meals = days.map(day => Object.fromEntries([["day", String(day?.day || "").slice(0, 20)], ...mealKeys.map(key => [key, String(day?.[key] || "").slice(0, 600)])]));
+  const meals = days.map(day => Object.fromEntries([["day", String(day?.day || "").slice(0, 20)], ...mealKeys.map(key => [key, isFreeMeal(day?.[key]) ? FREE_MEAL_FOR_SHOPPING : String(day?.[key] || "").slice(0, 600)])]));
   const result = await callOpenAI({
     name: "weekly_shopping_list", schema: shoppingSchema,
-    instructions: "Armá una lista de compras para UNA persona durante una semana, a partir del menú semanal del input. Agrupá por sección de la compra (verdulería, frutas, carnes y huevos, lácteos, almacén, panadería, etc.). Sumá lo que se repite. Las cantidades son aproximadas, en unidades de compra o medidas caseras (unidades, atados, docena, paquete, lata, frasco, bolsa, bandeja, cabeza, tazas) y SIN gramos, kilos, mililitros, calorías ni porcentajes. No agregues alimentos que no estén en el menú, salvo condimentos básicos (sal, aceite, vinagre) que podés incluir en almacén. En español rioplatense. En reviewNote aclará que son cantidades orientativas que el profesional debe revisar.",
+    instructions: "Armá una lista de compras para UNA persona durante una semana, a partir del menú semanal del input. Agrupá por sección de la compra (verdulería, frutas, carnes y huevos, lácteos, almacén, panadería, etc.). Sumá lo que se repite. Las cantidades son aproximadas, en unidades de compra o medidas caseras (unidades, atados, docena, paquete, lata, frasco, bolsa, bandeja, cabeza, tazas) y SIN gramos, kilos, mililitros, calorías ni porcentajes. Las comidas que dicen «Libre» no llevan compras: no agregues ningún alimento por ellas. No agregues alimentos que no estén en el menú, salvo condimentos básicos (sal, aceite, vinagre) que podés incluir en almacén. En español rioplatense. En reviewNote aclará que son cantidades orientativas que el profesional debe revisar.",
     input: { meals }
   });
   if (hasExactNutritionAmounts(JSON.stringify(result))) throw fail("La lista incluyó cantidades en gramos o litros. No se guardó; volvé a intentar.", 502);

@@ -31,6 +31,6 @@ window.addEventListener("beforeunload", event => { if (S.dirty || S.saving) { ev
 refreshAuth();
 setInterval(checkForRemoteChanges, 30_000);
 setInterval(() => { if (S.authenticated && !S.dirty) renderAgenda(); }, 5 * 60_000);
-if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js?v=12").catch(() => {}));
+if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js?v=13").catch(() => {}));
 
 export { todayISO };

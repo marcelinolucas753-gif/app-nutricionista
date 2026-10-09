@@ -7,7 +7,7 @@ import { fail } from "../validation.mjs";
 const DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const menu = (overrides = {}) => ({
   intro: "Propuesta semanal.",
-  days: DAYS.map((day, index) => ({ day, breakfast: "Mate cocido con tostadas y queso", snack1: "Una manzana", lunch: "Pollo con arroz", snack2: "Un yogur", merienda: "Té con pan y dulce", dinner: "Sopa de verduras", extra: "", ...(overrides[index] || {}) })),
+  days: DAYS.map((day, index) => ({ day, breakfast: "Mate cocido con tostadas y queso", snack1: "Una manzana", lunch: `Pollo con arroz ${index}`, snack2: "Un yogur", merienda: "Té con pan y dulce", dinner: `Sopa de verduras ${index}`, extra: "", ...(overrides[index] || {}) })),
   recommendations: ["Llevá la vianda lista la noche anterior.", "Probá variar las frutas.", "Tomá agua."],
   reviewNotes: ["Validá alergias, medicación y adecuación individual."]
 });

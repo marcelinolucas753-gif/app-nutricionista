@@ -2,6 +2,7 @@ import { $, DAYS, MEALS, api, copyText, escapeHTML, formatDateTime, openExternal
 import { S, ensureSaved, queueSave } from "./state.js";
 import { draftFromTemplate, hasDeclaredAllergies, logHistory, makeTemplate, uid } from "./logic.js";
 import { bindFeedback, feedbackHTML } from "./feedback.js";
+import { QUICK_OPTIONS, buildReplaceInstruction } from "./meal-options.js";
 import { analyzeDraft, analyzeText, describeConflict, hasAllergyConflicts, hasExactNutritionAmounts } from "../safety.mjs";
 import { buildShoppingMessage, whatsappLink } from "../contact.mjs";
 import { calculatePatientRequirements, derivePortionGuidance } from "../nutrition.mjs";
@@ -129,10 +130,29 @@ async function generateMenu(person, rerender) {
   }
 }
 
-async function mealAction(person, button, rerender) {
+/** «Reemplazar comida»: muestra botones rápidos (y un texto opcional) antes de consultar a la IA. */
+function askReplaceOptions(box, onConfirm) {
+  box.classList.remove("hidden");
+  box.innerHTML = `<div class="quick-options"><strong>¿Qué cambio te gustaría probar? (opcional)</strong>`
+    + `<div class="quick-chips">${QUICK_OPTIONS.map(([key, label]) => `<label class="quick-chip"><input type="checkbox" value="${key}"> ${escapeHTML(label)}</label>`).join("")}</div>`
+    + `<input type="text" class="quick-text" maxlength="300" placeholder="Otra indicación (por ejemplo: sin pollo)">`
+    + `<div class="quick-buttons"><button type="button" class="button" data-quick-go>Reemplazar</button><button type="button" class="button button-quiet" data-quick-cancel>Cancelar</button></div></div>`;
+  box.querySelector("[data-quick-go]").addEventListener("click", () => {
+    const keys = [...box.querySelectorAll(".quick-chip input:checked")].map(input => input.value);
+    onConfirm(buildReplaceInstruction(keys, box.querySelector(".quick-text").value));
+  });
+  box.querySelector("[data-quick-cancel]").addEventListener("click", () => { box.textContent = ""; box.classList.add("hidden"); });
+}
+
+function mealAction(person, button, rerender) {
+  if (button.dataset.aiMeal !== "replace") return runMealAction(person, button, rerender);
+  askReplaceOptions(button.closest(".meal-edit").querySelector(".ai-result"), instruction => runMealAction(person, button, rerender, instruction));
+}
+
+async function runMealAction(person, button, rerender, instruction = "") {
   const card = button.closest(".meal-edit"), area = card.querySelector("textarea"), box = card.querySelector(".ai-result"), action = button.dataset.aiMeal;
   let endpoint, body = { patientId: person.id };
-  if (action === "replace") { endpoint = "regenerate-meal"; body.dayIndex = Number(area.dataset.day); body.mealKey = area.dataset.meal; const note = window.prompt("¿Qué cambio te gustaría probar? (opcional)"); if (note === null) return; body.instruction = note; }
+  if (action === "replace") { endpoint = "regenerate-meal"; body.dayIndex = Number(area.dataset.day); body.mealKey = area.dataset.meal; body.instruction = instruction; }
   else if (action === "recipe") { endpoint = "recipe"; const portions = window.prompt("¿Para cuántas porciones?", "2"); if (portions === null) return; body.meal = area.value; body.portions = portions || "2"; }
   else { endpoint = "substitutions"; body.meal = area.value; body.ingredient = window.prompt("¿Qué alimento querés sustituir?") || ""; if (!body.ingredient) return; }
   button.disabled = true; box.classList.remove("hidden"); box.textContent = "Consultando a la IA…";
