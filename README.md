@@ -5,7 +5,7 @@ Aplicación web en español para que profesionales de nutrición organicen pacie
 ## Qué incorpora esta versión
 
 - Acceso individual por profesional: cada cuenta ve únicamente sus fichas. Los datos se sincronizan entre dispositivos mediante una base PostgreSQL central.
-- Respaldo automático diario cifrado. Se conservan los últimos 14 respaldos diarios y uno por semana durante 8 semanas. La clave de cifrado es irremplazable: guardala aparte y con acceso restringido.
+- Respaldo automático diario cifrado. Se conservan los últimos 14 respaldos diarios y uno por semana durante 8 semanas. Cada respaldo incluye las cuentas, las fichas y turnos, los accesos al portal de pacientes, lo que los pacientes enviaron desde el portal (pesos y notas) y las opiniones 👍/👎 sobre la IA. Quedan afuera, a propósito, las sesiones abiertas y las mediciones de uso de la IA. La clave de cifrado es irremplazable: guardala aparte y con acceso restringido.
 - Asistente para resumir consultas y preparar preguntas de seguimiento.
 - Reemplazo de una comida puntual sin regenerar el resto del menú, recetas con medidas caseras y sugerencias de sustitución.
 - Todo lo creado con IA queda como propuesta para revisión. El PDF para pacientes solo se habilita después de aprobar el plan. Luego lo descargás y elegís por qué medio compartirlo.
@@ -50,7 +50,7 @@ La aplicación requiere Node.js 20.6 o posterior, npm y Docker Desktop para inic
 6. Iniciá la aplicación con `iniciar-app.bat` e ingresá con ese correo y contraseña.
 7. Para activar las funciones de IA, cargá una clave de OpenAI en `OPENAI_API_KEY` dentro de `.env` y reiniciá la aplicación. La clave de API puede tener costos propios; no es la contraseña de ChatGPT.
 
-Para agregar otros profesionales, repetí el paso 5 con su correo y nombre. Para restablecer una contraseña: `node --env-file=.env manage-users.mjs reset-password correo@ejemplo.com`. Para recuperar datos: `node --env-file=.env restore-backup.mjs ruta/al/respaldo.enc`; escribí `RESTAURAR` cuando lo pida. Antes de restaurar se crea un respaldo cifrado de seguridad.
+Para agregar otros profesionales, repetí el paso 5 con su correo y nombre. Para restablecer una contraseña: `node --env-file=.env manage-users.mjs reset-password correo@ejemplo.com`. Para recuperar datos: `node --env-file=.env restore-backup.mjs ruta/al/respaldo.enc`; escribí `RESTAURAR` cuando lo pida. Antes de restaurar se crea un respaldo cifrado de seguridad. Al restaurar un respaldo nuevo se reemplazan también los accesos al portal, los envíos de pacientes y las opiniones de esas cuentas, y los pacientes tienen que volver a ingresar con su código o enlace. Los respaldos anteriores a este cambio solo traen cuentas y fichas: se pueden restaurar igual y dejan el portal como está.
 
 Las credenciales de PostgreSQL incluidas en `docker-compose.yml` son solo para la base local de prueba. No las reutilices para publicar la aplicación.
 
