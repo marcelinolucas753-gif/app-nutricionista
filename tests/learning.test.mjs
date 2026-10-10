@@ -47,6 +47,14 @@ test("una queja sobre planes completos solo cuenta si se repite", () => {
   assert.deepEqual(buildLearning(twice, {}).planComplaints, ["demasiado caro"]);
 });
 
+test("un 👎 «solo para esta persona» cuenta únicamente para esa ficha", () => {
+  const rows = [{ ...row("down", "lunch", "Guiso de lentejas", ["otro"]), patient_ref: "ficha-1" }, row("up", "lunch", "Pollo con arroz")];
+  assert.deepEqual(buildLearning(rows, { id: "ficha-1" }).disliked.map(item => item.text), ["Guiso de lentejas"]);
+  const other = buildLearning(rows, { id: "ficha-2" });
+  assert.equal(other.disliked.length, 0);
+  assert.deepEqual(other.liked.map(item => item.text), ["Pollo con arroz"]);
+});
+
 // --- La IA recibe las opiniones ---------------------------------------------------------------
 function mockAI(response) {
   const calls = [], original = globalThis.fetch;

@@ -6,11 +6,11 @@ export const nav = {
   openPatient: () => {}, openForm: () => {}, openAppointmentForm: () => {}, refreshDetail: () => {}
 };
 
-const TITLES = { home: "Inicio", patients: "Mis pacientes", form: "Ficha individual", detail: "Ficha", agenda: "Agenda" };
+const TITLES = { home: "Inicio", patients: "Mis pacientes", form: "Ficha individual", detail: "Ficha", agenda: "Agenda", settings: "Ajustes de la IA" };
 
 export function setPage(page) {
   nav.state.page = page;
-  for (const id of ["home", "patients", "form", "detail", "agenda"]) $(`page-${id}`).classList.toggle("hidden", id !== page);
+  for (const id of ["home", "patients", "form", "detail", "agenda", "settings"]) $(`page-${id}`).classList.toggle("hidden", id !== page);
   $("crumb").textContent = TITLES[page];
   const highlighted = page === "detail" || page === "form" ? "patients" : page;
   document.querySelectorAll(".nav-item").forEach(button => button.classList.toggle("active", button.dataset.page === highlighted));

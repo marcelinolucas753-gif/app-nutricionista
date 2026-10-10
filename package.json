@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "start": "node migrate.mjs && node server.mjs",
-    "test": "node --test tests/*.test.mjs"
+    "test": "node --test tests/*.test.mjs",
+    "evaluar": "node evaluar-ia.mjs"
   },
   "engines": {
     "node": ">=20.6"

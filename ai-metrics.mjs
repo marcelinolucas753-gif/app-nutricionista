@@ -84,15 +84,17 @@ export function validateFeedback(body = {}) {
   const reasons = body.rating === "down" && Array.isArray(body.reasons)
     ? [...new Set(body.reasons.filter(reason => FEEDBACK_REASONS.includes(reason)))].slice(0, 4) : [];
   const mealText = scope === "meal" && typeof body.mealText === "string" ? body.mealText.trim().slice(0, 400) : "";
-  return { scope, mealKey: scope === "meal" ? body.mealKey : null, rating: body.rating, reasons, mealText: mealText || null };
+  // «Solo para esta persona»: únicamente en un 👎 sobre una comida, y con el código de ficha.
+  const patientRef = scope === "meal" && body.rating === "down" && body.patientOnly === true && typeof body.patientId === "string" && body.patientId && body.patientId.length <= 120 ? body.patientId : null;
+  return { scope, mealKey: scope === "meal" ? body.mealKey : null, rating: body.rating, reasons, mealText: mealText || null, patientRef };
 }
 
 export async function saveFeedback(professionalId, input) {
   const { withProfessional } = await import("./db.mjs");
   await withProfessional(professionalId, client => client.query(
-    `INSERT INTO ai_feedback (professional_id, scope, meal_key, rating, reasons, meal_text, rules_version)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-    [professionalId, input.scope, input.mealKey, input.rating, input.reasons, input.mealText, RULES_VERSION]
+    `INSERT INTO ai_feedback (professional_id, scope, meal_key, rating, reasons, meal_text, rules_version, patient_ref)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+    [professionalId, input.scope, input.mealKey, input.rating, input.reasons, input.mealText, RULES_VERSION, input.patientRef || null]
   ));
 }
 
@@ -101,7 +103,7 @@ export async function recentFeedback(professionalId, limit = 120) {
   try {
     const { withProfessional } = await import("./db.mjs");
     const result = await withProfessional(professionalId, client => client.query(
-      `SELECT scope, meal_key, rating, reasons, meal_text FROM ai_feedback
+      `SELECT scope, meal_key, rating, reasons, meal_text, patient_ref FROM ai_feedback
        WHERE professional_id = $1 AND created_at > now() - interval '120 days'
        ORDER BY created_at DESC LIMIT $2`, [professionalId, limit]));
     return result.rows;

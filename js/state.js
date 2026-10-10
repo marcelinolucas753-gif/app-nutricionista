@@ -6,7 +6,7 @@ const LEGACY_DONE_KEY = "nutri-guia-cloud-import-confirmed-v1";
 
 /** Estado compartido de la app. Las pantallas lo leen y llaman a `queueSave()` después de cambiarlo. */
 export const S = {
-  patients: [], appointments: [], templates: [],
+  patients: [], appointments: [], templates: [], aiSettings: { foodsCommon: null, foodsAvoid: null, extraRules: "" },
   version: 0, authenticated: false, professional: null, backup: null,
   dirty: false, saving: false, dismissedRemote: 0, saveTimer: null, retryTimer: null
 };
@@ -19,7 +19,7 @@ function legacyList(key) {
 }
 
 function payload() {
-  return { patients: S.patients.map(({ submissions, ...rest }) => rest), appointments: S.appointments, templates: S.templates, version: S.version };
+  return { patients: S.patients.map(({ submissions, ...rest }) => rest), appointments: S.appointments, templates: S.templates, aiSettings: S.aiSettings, version: S.version };
 }
 
 export function backupJSON() {
@@ -79,6 +79,7 @@ export async function loadCloudData() {
   S.patients = Array.isArray(body.patients) ? body.patients : [];
   S.appointments = Array.isArray(body.appointments) ? body.appointments : [];
   S.templates = Array.isArray(body.templates) ? body.templates : [];
+  S.aiSettings = { foodsCommon: body.aiSettings?.foodsCommon || null, foodsAvoid: body.aiSettings?.foodsAvoid || null, extraRules: body.aiSettings?.extraRules || "" };
   S.version = Number(body.version) || 0;
   await offerLegacyImport();
   hooks.rerender();

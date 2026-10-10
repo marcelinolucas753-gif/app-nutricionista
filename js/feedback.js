@@ -14,20 +14,21 @@ export function feedbackHTML(scope, mealKey = "") {
     + `<button type="button" class="button button-quiet" data-rating="down" aria-label="Esta propuesta no me sirve" title="No me sirve">👎</button></span>`;
 }
 
-async function send(box, rating, reasons) {
+async function send(box, rating, reasons, patientOnly = false) {
   const mealKey = box.dataset.feedbackMeal || undefined;
   const mealText = mealKey ? box.closest(".meal-edit")?.querySelector("textarea")?.value : undefined;
   box.textContent = "Guardando…";
   try {
-    await api("/api/feedback", { method: "POST", body: { scope: box.dataset.feedbackScope, rating, reasons, mealKey, mealText } });
+    await api("/api/feedback", { method: "POST", body: { scope: box.dataset.feedbackScope, rating, reasons, mealKey, mealText, patientOnly, patientId: patientOnly ? box.closest("#plans-panel")?.dataset.patient : undefined } });
     box.textContent = "¡Gracias! ✓";
   } catch { box.textContent = "No se pudo guardar tu opinión."; }
 }
 
 function askReasons(box) {
   box.innerHTML = `<span class="feedback-reasons">${REASONS.map(([key, label]) => `<label><input type="checkbox" value="${key}"> ${label}</label>`).join("")}`
+    + (box.dataset.feedbackScope === "meal" ? `<label class="feedback-only"><input type="checkbox" data-patient-only> Solo para esta persona</label>` : "")
     + `<button type="button" class="button button-quiet" data-send>Enviar</button></span>`;
-  box.querySelector("[data-send]").addEventListener("click", () => send(box, "down", [...box.querySelectorAll("input:checked")].map(input => input.value)));
+  box.querySelector("[data-send]").addEventListener("click", () => send(box, "down", [...box.querySelectorAll(".feedback-reasons input[value]:checked")].map(input => input.value), Boolean(box.querySelector("[data-patient-only]")?.checked)));
 }
 
 /** Conecta todos los botones de opinión que haya dentro de `root`. */

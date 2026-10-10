@@ -84,6 +84,15 @@ async function loadPatient(professionalId, patientId) {
     return result.rows[0]?.document?.patients?.find(patient => patient.id === patientId) || null;
   });
 }
+/** Ajustes de la IA que la profesional editó desde la app (listas de alimentos y reglas propias). */
+async function loadAiSettings(professionalId) {
+  try {
+    return await withProfessional(professionalId, async client => {
+      const result = await client.query("SELECT document->'aiSettings' AS settings FROM professional_data WHERE professional_id=$1", [professionalId]);
+      return result.rows[0]?.settings || null;
+    });
+  } catch { return null; }
+}
 function requireAiConsent(patient) {
   if (!patient) throw fail("No encontramos esa ficha.", 404);
   if (!patient.consentedAt || patient.consentVersion !== 3) throw fail("Esta ficha necesita volver a registrar la autorización para usar IA.", 403);
@@ -210,6 +219,10 @@ async function handle(req, res) {
         await client.query("INSERT INTO professional_data (professional_id,document,version) VALUES ($1,'{\"patients\":[],\"appointments\":[],\"templates\":[]}'::jsonb,0) ON CONFLICT (professional_id) DO NOTHING", [user.id]);
         const result = await client.query("SELECT version FROM professional_data WHERE professional_id=$1 FOR UPDATE", [user.id]); const current = Number(result.rows[0]?.version || 0);
         if (current !== expectedVersion) return { conflict: true, version: current };
+        if (document.aiSettings === undefined) {
+          const previous = await client.query("SELECT document->'aiSettings' AS settings FROM professional_data WHERE professional_id=$1", [user.id]);
+          if (previous.rows[0]?.settings) document.aiSettings = previous.rows[0].settings;
+        }
         const next = current + 1;
         await client.query("UPDATE professional_data SET document=$2::jsonb,version=$3,updated_at=now() WHERE professional_id=$1", [user.id, JSON.stringify(document), next]);
         await client.query("INSERT INTO audit_events (professional_id,action,result) VALUES ($1,'data_save','success')", [user.id]);
@@ -226,8 +239,8 @@ async function handle(req, res) {
     try {
       const request = await readJson(req, 20_000); const patient = await loadPatient(user.id, request.patientId); requireAiConsent(patient);
       if (!Number.isFinite(Number(patient.age)) || !patient.condition || !patient.goal) throw fail("Faltan datos necesarios para proponer el menú.");
-      const learning = buildLearning(await recentFeedback(user.id), patient);
-      const output = await measureAi("ai_weekly_menu", user.id, () => generateWeeklyMenu(patient, learning));
+      const learning = buildLearning(await recentFeedback(user.id), patient), settings = await loadAiSettings(user.id);
+      const output = await measureAi("ai_weekly_menu", user.id, () => generateWeeklyMenu(patient, learning, settings));
       await writeAudit(user.id, "ai_weekly_menu", "success").catch(() => {}); json(res, 200, output);
     } catch (error) { json(res, error.status || 500, { error: error.message || "No se pudo generar el menú." }); }
     return;
@@ -246,7 +259,7 @@ async function handle(req, res) {
       const body = await readJson(req, 40_000); const patient = await loadPatient(user.id, body.patientId); requireAiConsent(patient);
       let result; let action;
       if (pathname === "/api/ai/consultation-summary") { action = "ai_consultation_summary"; result = await measureAi(action, user.id, () => summarizeConsultations(patient)); }
-      else if (pathname === "/api/ai/regenerate-meal") { action = "ai_meal_replacement"; const learning = buildLearning(await recentFeedback(user.id), patient, { slot: body.mealKey }); result = await measureAi(action, user.id, () => regenerateMeal(patient, { dayIndex: Number(body.dayIndex), mealKey: body.mealKey, learning, instruction: typeof body.instruction === "string" ? body.instruction.trim().slice(0, 500) : "" })); }
+      else if (pathname === "/api/ai/regenerate-meal") { action = "ai_meal_replacement"; const learning = buildLearning(await recentFeedback(user.id), patient, { slot: body.mealKey }), settings = await loadAiSettings(user.id); result = await measureAi(action, user.id, () => regenerateMeal(patient, { dayIndex: Number(body.dayIndex), mealKey: body.mealKey, learning, settings, instruction: typeof body.instruction === "string" ? body.instruction.trim().slice(0, 500) : "" })); }
       else if (pathname === "/api/ai/recipe") { action = "ai_recipe"; result = await measureAi(action, user.id, () => createRecipe(patient, { meal: typeof body.meal === "string" ? body.meal.trim().slice(0, 1000) : "", portions: body.portions })); }
       else if (pathname === "/api/ai/substitutions") { action = "ai_substitution_ideas"; result = await measureAi(action, user.id, () => suggestSubstitutions(patient, { meal: typeof body.meal === "string" ? body.meal.trim().slice(0, 1000) : "", ingredient: typeof body.ingredient === "string" ? body.ingredient.trim().slice(0, 160) : "" })); }
       else if (pathname === "/api/ai/shopping-list") { action = "ai_shopping_list"; result = await measureAi(action, user.id, () => generateShoppingList(patient, body.days)); }

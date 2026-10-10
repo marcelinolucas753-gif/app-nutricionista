@@ -95,3 +95,10 @@
 .quick-chip:has(input:checked) { background: var(--primary-light); border-color: var(--primary); }
 .quick-text { width: 100%; }
 .quick-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.settings-form { display: grid; gap: 14px; max-width: 760px; }
+.settings-form textarea { width: 100%; }
+.settings-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.kitchen-tools { display: grid; gap: 4px; border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; }
+.kitchen-tools legend { font-size: 13px; font-weight: 600; padding: 0 6px; }
+.feedback-only { display: inline-flex; align-items: center; gap: 4px; margin: 0; font-size: 12px; font-weight: 600; }
+.kitchen-tools .optional { font-size: 12px; font-weight: 400; color: var(--text-secondary); }

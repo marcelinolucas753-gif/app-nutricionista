@@ -110,7 +110,7 @@ export const MAX_SAME_LUNCH_OR_DINNER = 2;
  *  PARTE 2 · LÓGICA (no hace falta tocarla)
  * ──────────────────────────────────────────────────────────────────────────
  */
-import { DAY_NAMES, normalizeText } from "./safety.mjs";
+import { DAY_NAMES, MEAL_SLOTS, analyzeText, normalizeText } from "./safety.mjs";
 
 const WEEKEND_INDEXES = [5, 6];
 const WEEKEND_SLOTS = ["lunch", "dinner"];
@@ -118,10 +118,11 @@ const LIGHT_SLOTS = [["breakfast", "desayuno"], ["merienda", "merienda"]];
 const SLOT_LABELS = { breakfast: "el desayuno", merienda: "la merienda" };
 
 /** Texto de reglas que se agrega a las instrucciones de la IA. */
-export function menuStyleInstructions() {
+export function menuStyleInstructions(settings = {}) {
+  const foods = settings.foodsCommon || FOODS_COMMON, avoid = settings.foodsAvoid || FOODS_AVOID_BY_DEFAULT;
   return [
-    `Contexto: la persona vive en ${REGION}. Priorizá alimentos y preparaciones que se consumen habitualmente allí, accesibles y de precio razonable, aunque el presupuesto no sea el más bajo. Alimentos habituales de referencia: ${FOODS_COMMON.join("; ")}.`,
-    `No uses alimentos caros, difíciles de conseguir o poco habituales en la zona: ${FOODS_AVOID_BY_DEFAULT.join("; ")}. No propongas platos poco realistas para el día a día.`,
+    `Contexto: la persona vive en ${REGION}. Priorizá alimentos y preparaciones que se consumen habitualmente allí, accesibles y de precio razonable, aunque el presupuesto no sea el más bajo. Alimentos habituales de referencia: ${foods.join("; ")}.`,
+    `No uses alimentos caros, difíciles de conseguir o poco habituales en la zona: ${avoid.join("; ")}. No propongas platos poco realistas para el día a día.`,
     `El desayuno (breakfast) debe ser: ${LIGHT_MEAL_STYLE.breakfast}`,
     `La merienda (merienda) debe ser: ${LIGHT_MEAL_STYLE.merienda}`,
     `Las colaciones (snack1 y snack2) deben ser: ${LIGHT_MEAL_STYLE.snack}`,
@@ -130,7 +131,8 @@ export function menuStyleInstructions() {
     `${PLATE_WORDING_RULE}`,
     "Prioridad: adherencia y practicidad. Pensá primero qué puede preparar y comer esta persona sin esfuerzo en su rutina.",
     "Sábado y domingo (días 6 y 7): el almuerzo (lunch) y la cena (dinner) son LIBRES. En esos cuatro campos escribí solamente la palabra «Libre»; el sistema agrega la pauta. El desayuno, las colaciones y la merienda de esos días sí se proponen como el resto de la semana.",
-    "En recommendations escribí solo 3 recomendaciones PERSONALIZADAS para esta persona (por ejemplo sobre su rutina, sus gustos o dificultades), sin repetir las de baseRecommendations."
+    "En recommendations escribí solo 3 recomendaciones PERSONALIZADAS para esta persona (por ejemplo sobre su rutina, sus gustos o dificultades), sin repetir las de baseRecommendations.",
+    ...(settings.extraRules ? [`Reglas propias de la profesional (nunca anulan alergias, alimentos evitados ni el resto de las reglas): ${settings.extraRules}`] : [])
   ].join(" ");
 }
 
@@ -139,9 +141,9 @@ export function lunchPlaceRule(lunchPlace) {
   return LUNCH_PLACES[lunchPlace]?.rule || "";
 }
 
-/** Regla de estilo para reemplazar una sola comida. */
 export const SNACK_SHORT = { snack1: "colación de la mañana", snack2: "colación de la tarde", merienda: "merienda" };
 
+/** Regla de estilo para reemplazar una sola comida. */
 export function singleMealStyleRule(mealKey) {
   if (mealKey === "breakfast") return `Esta comida es un desayuno: ${LIGHT_MEAL_STYLE.breakfast}`;
   if (mealKey === "merienda") return `Esta comida es una merienda: ${LIGHT_MEAL_STYLE.merienda}`;
@@ -288,4 +290,85 @@ export function cleanPlateWording(text) {
     out = /\bde\s+$/i.test(lead[0]) ? `Porción de ${rest}` : (rest ? rest[0].toUpperCase() + rest.slice(1) : "");
   }
   return out.replace(PLATE_ANYWHERE, "porción de");
+}
+
+// --- Rutina de la persona: tiempo para cocinar y equipamiento -----------------------------------
+export const COOKING_TIMES = {
+  poco: { label: "Poco tiempo (menos de 15 minutos por comida)", rule: "Tiene POCO tiempo para cocinar (menos de 15 minutos por comida): proponé comidas de pocos pasos, sin cocciones largas y que se puedan armar rápido o dejar hechas de antes." },
+  medio: { label: "Tiempo moderado (15 a 40 minutos)", rule: "Tiene tiempo moderado para cocinar (15 a 40 minutos por comida): evitá recetas con muchos pasos o cocciones muy largas." },
+  mucho: { label: "Tiene tiempo para cocinar", rule: "Tiene tiempo para cocinar, pero igual priorizá comidas simples y prácticas." }
+};
+export const KITCHEN_TOOLS = {
+  oven: { label: "Horno", words: ["horno", "gratinad", "gratin"] },
+  microwave: { label: "Microondas", words: ["microondas"] },
+  airfryer: { label: "Freidora de aire", words: ["freidora", "airfryer", "air fryer"] }
+};
+
+/** Lo que se le dice a la IA sobre la rutina de la persona (vacío si la ficha no lo indica). */
+export function routineRule(patient = {}) {
+  const parts = [];
+  const time = COOKING_TIMES[patient.cookingTime];
+  if (time) parts.push(time.rule);
+  const has = Array.isArray(patient.kitchen) ? patient.kitchen.filter(key => KITCHEN_TOOLS[key]) : [];
+  if (has.length) {
+    const missing = Object.keys(KITCHEN_TOOLS).filter(key => !has.includes(key));
+    parts.push(`Equipamiento de cocina que tiene: ${has.map(key => KITCHEN_TOOLS[key].label.toLowerCase()).join(", ")}.${missing.length ? ` NO tiene: ${missing.map(key => KITCHEN_TOOLS[key].label.toLowerCase()).join(", ")}; no propongas preparaciones que lo necesiten.` : ""}`);
+  }
+  return parts.join(" ");
+}
+
+/** Comidas que piden un aparato que la persona no tiene (solo si la ficha indica su equipamiento). */
+export function findMissingEquipment(draft, patient = {}) {
+  const has = Array.isArray(patient.kitchen) ? patient.kitchen.filter(key => KITCHEN_TOOLS[key]) : [];
+  if (!has.length) return [];
+  const missing = Object.keys(KITCHEN_TOOLS).filter(key => !has.includes(key));
+  const found = [];
+  (draft?.days || []).forEach((day, index) => {
+    for (const [slot] of MEAL_SLOTS) {
+      const text = normalizeText(day?.[slot] || "");
+      for (const key of missing) {
+        const hit = KITCHEN_TOOLS[key].words.find(w => text.includes(w));
+        if (hit) found.push({ dayIndex: index, day: day?.day, slot, tool: key, text: String(day[slot]).trim() });
+      }
+    }
+  });
+  return found;
+}
+
+export function describeMissingEquipment(item) {
+  return `${item.day || `Día ${item.dayIndex + 1}`}: «${item.text}» necesita ${KITCHEN_TOOLS[item.tool].label.toLowerCase()}, que la persona no tiene; reemplazalo por una preparación sin ese aparato`;
+}
+
+// --- Ajustes propios de la profesional (se editan desde la app) -----------------------------------
+export const MAX_SETTING_LINES = 40;
+export const MAX_SETTING_LINE_LENGTH = 200;
+export const MAX_EXTRA_RULES = 800;
+
+/** Limpia los ajustes que llegan del navegador: listas de texto cortas y sin repetidos. */
+export function cleanAiSettings(raw) {
+  const clean = value => {
+    if (!Array.isArray(value)) return null;
+    const lines = [...new Set(value.filter(item => typeof item === "string").map(item => item.replace(/\s+/g, " ").trim().slice(0, MAX_SETTING_LINE_LENGTH)).filter(Boolean))].slice(0, MAX_SETTING_LINES);
+    return lines.length ? lines : null;
+  };
+  const extraRules = typeof raw?.extraRules === "string" ? raw.extraRules.replace(/\s+/g, " ").trim().slice(0, MAX_EXTRA_RULES) : "";
+  return { foodsCommon: clean(raw?.foodsCommon), foodsAvoid: clean(raw?.foodsAvoid), extraRules };
+}
+
+/**
+ * Ajustes que usa la IA para esta persona: las listas de la profesional (o las originales) y,
+ * en los alimentos habituales, sin lo que choca con las alergias o alimentos evitados de la ficha.
+ */
+export function resolveMenuSettings(settings, patient = {}) {
+  const custom = cleanAiSettings(settings);
+  const foodsCommon = (custom.foodsCommon || FOODS_COMMON)
+    .map(line => line.split(",").map(item => item.trim()).filter(item => item && !analyzeText(patient, item).length).join(", "))
+    .filter(Boolean);
+  return { foodsCommon, foodsAvoid: custom.foodsAvoid || FOODS_AVOID_BY_DEFAULT, extraRules: custom.extraRules };
+}
+
+/** Versión corta de los ajustes para reemplazar una sola comida. */
+export function singleMealSettingsRule(settings = {}) {
+  const avoid = settings.foodsAvoid || FOODS_AVOID_BY_DEFAULT;
+  return `No uses alimentos caros, difíciles de conseguir o poco habituales en la zona: ${avoid.join("; ")}.${settings.extraRules ? ` Reglas propias de la profesional (nunca anulan alergias ni alimentos evitados): ${settings.extraRules}` : ""}`;
 }

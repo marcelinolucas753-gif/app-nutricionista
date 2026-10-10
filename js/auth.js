@@ -16,7 +16,7 @@ export function renderBackupBanner() {
 
 function showSignedOut(message = "") {
   S.authenticated = false; S.professional = null;
-  S.patients = []; S.appointments = []; S.templates = []; S.dirty = false;
+  S.patients = []; S.appointments = []; S.templates = []; S.aiSettings = { foodsCommon: null, foodsAvoid: null, extraRules: "" }; S.dirty = false;
   $("login-gate").classList.remove("hidden");
   document.querySelector(".app-shell").classList.add("hidden");
   for (const id of ["signout", "change-password"]) $(id).classList.add("hidden");

@@ -102,3 +102,11 @@ Primero debe publicarse en una dirección HTTPS. Android: abrí el enlace en Chr
 - `npm test`: corre las pruebas automáticas (alergias, validaciones, gráficos, contacto, lógica de la ficha).
 - `GET /api/health`: informa si la base está disponible, sin exponer información de las fichas.
 - Las consultas y guardados deben seguir usando HTTPS y no registrar los cuerpos de solicitudes, que pueden contener datos de salud.
+
+## Evaluar la IA de menús
+
+`npm run evaluar` (o doble clic en `evaluar-ia.bat` en Windows) genera un menú por cada ficha de ejemplo de `evaluacion/fichas-ejemplo.mjs` con la IA real y revisa: fin de semana libre, desayunos y meriendas simples, sin repetidos, colaciones completas, equipamiento de cocina, alergias y alimentos evitados. Necesita `OPENAI_API_KEY` en `.env`; cada menú es una llamada con costo. El detalle con los menús completos se guarda en `evaluacion/resultados/` (no se sube a GitHub). Opciones: `npm run evaluar -- --veces 3 --menus`.
+
+## Ajustes de la IA
+
+En la app, «Ajustes de la IA» permite corregir las listas de alimentos habituales y no permitidos y agregar reglas propias. Se guardan en la cuenta de cada profesional.

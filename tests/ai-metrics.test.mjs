@@ -83,9 +83,16 @@ test("la versión de reglas es un código corto y estable", () => {
 
 test("validateFeedback acepta opiniones válidas y descarta lo que no corresponde", () => {
   assert.deepEqual(validateFeedback({ scope: "plan", rating: "up", reasons: ["muy_caro"], mealKey: "lunch", mealText: "x" }),
-    { scope: "plan", mealKey: null, rating: "up", reasons: [], mealText: null });
+    { scope: "plan", mealKey: null, rating: "up", reasons: [], mealText: null, patientRef: null });
   assert.deepEqual(validateFeedback({ scope: "meal", mealKey: "breakfast", rating: "down", reasons: ["muy_elaborado", "muy_elaborado", "inventado", "no_es_de_la_zona"], mealText: "  Tortilla de acelga  " }),
-    { scope: "meal", mealKey: "breakfast", rating: "down", reasons: ["muy_elaborado", "no_es_de_la_zona"], mealText: "Tortilla de acelga" });
+    { scope: "meal", mealKey: "breakfast", rating: "down", reasons: ["muy_elaborado", "no_es_de_la_zona"], mealText: "Tortilla de acelga", patientRef: null });
+  // «Solo para esta persona»: únicamente con 👎 sobre una comida y un código de ficha válido.
+  const only = { scope: "meal", mealKey: "dinner", rating: "down", patientOnly: true, patientId: "ficha-1" };
+  assert.equal(validateFeedback(only).patientRef, "ficha-1");
+  assert.equal(validateFeedback({ ...only, rating: "up" }).patientRef, null);
+  assert.equal(validateFeedback({ ...only, patientId: "" }).patientRef, null);
+  assert.equal(validateFeedback({ ...only, patientId: "x".repeat(200) }).patientRef, null);
+  assert.equal(validateFeedback({ ...only, patientOnly: "yes" }).patientRef, null);
   assert.equal(validateFeedback({ scope: "meal", mealKey: "dinner", rating: "up", mealText: "a".repeat(900) }).mealText.length, 400);
   assert.equal(validateFeedback({ scope: "meal", mealKey: "dinner", rating: "down", reasons: "muy_caro" }).reasons.length, 0);
   for (const bad of [{}, { scope: "otro", rating: "up" }, { scope: "plan", rating: "tal vez" }, { scope: "meal", rating: "up", mealKey: "postre" }, { scope: "meal", rating: "up" }]) {

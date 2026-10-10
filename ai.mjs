@@ -9,7 +9,7 @@ import { calculatePatientRequirements, derivePortionGuidance } from "./nutrition
 import { DAY_NAMES, MEAL_SLOTS, analyzeDraft, analyzeText, describeConflict, hasExactNutritionAmounts } from "./safety.mjs";
 import { noteCall } from "./ai-metrics.mjs";
 import { LEARNING_INSTRUCTION } from "./learning.mjs";
-import { LUNCH_PLACES, applyFreeWeekend, cleanPlateWording, baseRecommendationsFor, describeElaborate, describeRepeated, describeSnackProblem, findElaborateLightMeals, findRepeatedMeals, findSnackProblems, SNACK_SHORT, isFreeMeal, lunchPlaceRule, menuStyleInstructions, mergeRecommendations, singleMealStyleRule } from "./menu-rules.mjs";
+import { COOKING_TIMES, KITCHEN_TOOLS, LUNCH_PLACES, describeMissingEquipment, findMissingEquipment, resolveMenuSettings, routineRule, singleMealSettingsRule, applyFreeWeekend, cleanPlateWording, baseRecommendationsFor, describeElaborate, describeRepeated, describeSnackProblem, findElaborateLightMeals, findRepeatedMeals, findSnackProblems, SNACK_SHORT, isFreeMeal, lunchPlaceRule, menuStyleInstructions, mergeRecommendations, singleMealStyleRule } from "./menu-rules.mjs";
 
 const mealKeys = MEAL_SLOTS.map(([key]) => key);
 
@@ -83,7 +83,9 @@ function patientContext(patient) {
   return {
     age: Number(patient.age), condition: CONDITION_LABELS[patient.condition] || "Ficha", goal: patient.goal,
     likes: patient.likes || "", avoids: patient.avoids || "", allergies: patient.allergies || "", schedule: patient.schedule || "", context: patient.context || "",
-    lunchPlace: LUNCH_PLACES[patient.lunchPlace]?.label || "No especificado"
+    lunchPlace: LUNCH_PLACES[patient.lunchPlace]?.label || "No especificado",
+    cookingTime: COOKING_TIMES[patient.cookingTime]?.label || "No especificado",
+    kitchen: (Array.isArray(patient.kitchen) ? patient.kitchen : []).filter(key => KITCHEN_TOOLS[key]).map(key => KITCHEN_TOOLS[key].label).join(", ") || "No especificado"
   };
 }
 
@@ -93,7 +95,8 @@ function checkMenuStructure(output) {
   }
 }
 
-export async function generateWeeklyMenu(patient, learning = null) {
+export async function generateWeeklyMenu(patient, learning = null, settings = null) {
+  const resolved = resolveMenuSettings(settings, patient);
   const requirements = calculatePatientRequirements(patient);
   const portionGuidance = requirements ? derivePortionGuidance(requirements) : null;
   const base = {
@@ -103,7 +106,7 @@ export async function generateWeeklyMenu(patient, learning = null) {
     portionGuidance, baseRecommendations: baseRecommendationsFor(patient.condition),
     ...(learning ? { professionalFeedback: learning } : {})
   };
-  const instructions = `Sos un asistente para un estudiante avanzado de nutrición. Redactás borradores educativos para revisión profesional; no diagnostiques ni inventes información clínica. Usa alimentos cotidianos, económicos según presupuesto, y medidas caseras fáciles de entender (taza, rodaja, unidad, cucharada, plato o tamaño de la palma). No indiques gramos por alimento ni calorías o porcentajes de macros en el menú. Si input contiene portionGuidance, usá el campo perSlot (una entrada por breakfast, snack1, lunch, snack2, merienda, dinner) como regla OBLIGATORIA de tamaño de porción para esa comida: el campo hint de cada entrada ya describe, en medidas caseras, qué tan grande debe ser esa comida; elegí alimentos reales que encajen en ese tamaño, sin repetir los números de approxShareKcal ni mencionar la palabra kcal o calorías en el texto. Si portionGuidance incluye proteinEmphasis, aplicá esa indicación en las comidas principales. Si no hay requirements ni portionGuidance, usá porciones moderadas estándar y decilo en reviewNotes. No prometas precisión ni cambies mantenimiento por déficit/superávit. ${ALLERGY_RULE} Respetá los alimentos evitados, preferencias y horarios que efectivamente se indiquen en la ficha. No agregues exclusiones alimentarias que no estén indicadas. Para una alimentación vegetariana, respetá la preferencia si está expresada. No afirmes que un producto está libre de contaminación cruzada; recordá revisar etiqueta y manipulación cuando corresponda. Para diabetes tipo 2 e hipertensión, da recomendaciones generales prudentes sin ajustar medicamentos. Si falta información necesaria, dilo en reviewNotes. En español rioplatense. Cada día incluye desayuno (breakfast), colación matutina (snack1), almuerzo (lunch), colación vespertina (snack2), merienda (merienda), cena (dinner) y extra con una alternativa opcional. Las notas de revisión recuerdan validar alergias, medicación y adecuación individual. ${menuStyleInstructions()} ${lunchPlaceRule(patient.lunchPlace)} ${LEARNING_INSTRUCTION} Si aparece el campo mustFix, corregí exactamente esos puntos y dejá todo lo demás igual.`;
+  const instructions = `Sos un asistente para un estudiante avanzado de nutrición. Redactás borradores educativos para revisión profesional; no diagnostiques ni inventes información clínica. Usa alimentos cotidianos, económicos según presupuesto, y medidas caseras fáciles de entender (taza, rodaja, unidad, cucharada, plato o tamaño de la palma). No indiques gramos por alimento ni calorías o porcentajes de macros en el menú. Si input contiene portionGuidance, usá el campo perSlot (una entrada por breakfast, snack1, lunch, snack2, merienda, dinner) como regla OBLIGATORIA de tamaño de porción para esa comida: el campo hint de cada entrada ya describe, en medidas caseras, qué tan grande debe ser esa comida; elegí alimentos reales que encajen en ese tamaño, sin repetir los números de approxShareKcal ni mencionar la palabra kcal o calorías en el texto. Si portionGuidance incluye proteinEmphasis, aplicá esa indicación en las comidas principales. Si no hay requirements ni portionGuidance, usá porciones moderadas estándar y decilo en reviewNotes. No prometas precisión ni cambies mantenimiento por déficit/superávit. ${ALLERGY_RULE} Respetá los alimentos evitados, preferencias y horarios que efectivamente se indiquen en la ficha. No agregues exclusiones alimentarias que no estén indicadas. Para una alimentación vegetariana, respetá la preferencia si está expresada. No afirmes que un producto está libre de contaminación cruzada; recordá revisar etiqueta y manipulación cuando corresponda. Para diabetes tipo 2 e hipertensión, da recomendaciones generales prudentes sin ajustar medicamentos. Si falta información necesaria, dilo en reviewNotes. En español rioplatense. Cada día incluye desayuno (breakfast), colación matutina (snack1), almuerzo (lunch), colación vespertina (snack2), merienda (merienda), cena (dinner) y extra con una alternativa opcional. Las notas de revisión recuerdan validar alergias, medicación y adecuación individual. ${menuStyleInstructions(resolved)} ${lunchPlaceRule(patient.lunchPlace)} ${routineRule(patient)} ${LEARNING_INSTRUCTION} Si aparece el campo mustFix, corregí exactamente esos puntos y dejá todo lo demás igual.`;
   // Dos intentos como máximo. Las alergias son obligatorias: si persisten, no se devuelve nada.
   // Las comidas livianas elaboradas se corrigen una vez; si la IA insiste, se avisa en las notas de revisión.
   let mustFix, fallback;
@@ -111,8 +114,8 @@ export async function generateWeeklyMenu(patient, learning = null) {
     const output = await callOpenAI({ name: "weekly_meal_draft", schema: weeklySchema, instructions, input: mustFix ? { ...base, mustFix } : base });
     checkMenuStructure(output);
     const allergies = analyzeDraft(patient, output).filter(item => item.severity === "allergy");
-    const issues = { elaborate: findElaborateLightMeals(output), repeated: findRepeatedMeals(output), snacks: findSnackProblems(output) };
-    const hasIssues = issues.elaborate.length > 0 || issues.repeated.length > 0 || issues.snacks.length > 0;
+    const issues = { elaborate: findElaborateLightMeals(output), repeated: findRepeatedMeals(output), snacks: findSnackProblems(output), equipment: findMissingEquipment(output, patient) };
+    const hasIssues = issues.elaborate.length > 0 || issues.repeated.length > 0 || issues.snacks.length > 0 || issues.equipment.length > 0;
     if (!allergies.length) {
       if (!hasIssues || attempt === 1) return finishMenu(patient, output, issues);
       fallback = { output, issues }; // borrador seguro, por si el segundo intento trae una alergia
@@ -120,13 +123,13 @@ export async function generateWeeklyMenu(patient, learning = null) {
       if (fallback) return finishMenu(patient, fallback.output, fallback.issues);
       throw fail(CONFLICT_ERROR, 502);
     }
-    mustFix = [...allergies.map(describeConflict), ...issues.elaborate.map(describeElaborate), ...issues.repeated.map(describeRepeated), ...issues.snacks.map(describeSnackProblem)];
+    mustFix = [...allergies.map(describeConflict), ...issues.elaborate.map(describeElaborate), ...issues.repeated.map(describeRepeated), ...issues.snacks.map(describeSnackProblem), ...issues.equipment.map(describeMissingEquipment)];
   }
   throw fail(CONFLICT_ERROR, 502);
 }
 
 /** Aplica el fin de semana libre y las recomendaciones base; avisa lo que no se pudo mejorar. */
-function finishMenu(patient, output, issues = { elaborate: [], repeated: [], snacks: [] }) {
+function finishMenu(patient, output, issues = { elaborate: [], repeated: [], snacks: [], equipment: [] }) {
   output.days.forEach((day, index) => { day.day = DAY_NAMES[index]; for (const key of mealKeys) if (typeof day[key] === "string") day[key] = cleanPlateWording(day[key]); });
   applyFreeWeekend(output, patient.condition);
   output.recommendations = mergeRecommendations(patient.condition, output.recommendations);
@@ -134,6 +137,7 @@ function finishMenu(patient, output, issues = { elaborate: [], repeated: [], sna
   if (issues.elaborate.length) notes.push(`Revisá estas comidas livianas, que podrían ser más simples: ${issues.elaborate.map(item => `${item.day || `día ${item.dayIndex + 1}`} (${SLOT_SHORT[item.slot]})`).join(", ")}.`);
   for (const item of issues.repeated) notes.push(`Se repite el mismo ${item.label} (${item.dayIndexes.length} días de lunes a viernes): «${item.text}». Conviene variarlo.`);
   if (issues.snacks?.length) notes.push(`Revisá estas colaciones/meriendas, que conviene completar (yogur con fruta, cereales o granola; infusión con algo aparte): ${issues.snacks.map(item => `${item.day || `día ${item.dayIndex + 1}`} (${SNACK_SHORT[item.slot]})`).join(", ")}.`);
+  for (const item of issues.equipment || []) notes.push(`${item.day || `Día ${item.dayIndex + 1}`}: «${item.text}» usa ${KITCHEN_TOOLS[item.tool].label.toLowerCase()}, que según la ficha la persona no tiene. Conviene cambiarlo.`);
   if (!patient.lunchPlace) notes.push("No se indicó dónde almuerza la persona: completalo en la ficha para que el almuerzo se adapte a su rutina.");
   output.reviewNotes = [...notes, ...(Array.isArray(output.reviewNotes) ? output.reviewNotes : [])].slice(0, 5);
   return output;
@@ -146,7 +150,8 @@ export async function summarizeConsultations(patient) {
   return callOpenAI({ name: "consultation_summary", schema: consultationSchema, instructions: "Resumí las notas de consulta para que un profesional las revise y sugerí preguntas neutrales para el próximo encuentro. No diagnostiques ni infieras hechos que no estén escritos. Si algo no consta, no lo inventes. En español claro y conciso. La respuesta es un borrador interno para revisión.", input: { consultations } });
 }
 
-export async function regenerateMeal(patient, { dayIndex, mealKey, instruction, learning = null }) {
+export async function regenerateMeal(patient, { dayIndex, mealKey, instruction, learning = null, settings = null }) {
+  const resolved = resolveMenuSettings(settings, patient);
   const day = patient.draft?.days?.[dayIndex];
   if (!Number.isInteger(dayIndex) || dayIndex < 0 || dayIndex > 6 || !mealKeys.includes(mealKey) || !day) throw fail("No encontramos esa comida del plan.");
   const requirements = calculatePatientRequirements(patient);
@@ -158,17 +163,18 @@ export async function regenerateMeal(patient, { dayIndex, mealKey, instruction, 
     otherMealsThatDay: mealKeys.filter(other => other !== mealKey).map(other => day[other]), instruction: instruction || "", ...(learning ? { professionalFeedback: learning } : {})
   };
   delete base.context;
-  const instructions = `Proponé una sola comida en español rioplatense y medidas caseras. Si input contiene portionGuidance, su campo hint describe, en medidas caseras, el tamaño OBLIGATORIO de esta comida: elegí alimentos reales que encajen en ese tamaño, sin repetir números de kcal ni mencionar calorías. Respetá la comida, las preferencias y restricciones que aparecen en el contexto. ${ALLERGY_RULE} No agregues exclusiones no indicadas. No des gramos, calorías ni porcentajes. Es un borrador que revisará un profesional. No afirmes equivalencia clínica. ${singleMealStyleRule(mealKey)} ${mealKey === "lunch" ? lunchPlaceRule(patient.lunchPlace) : ""} Priorizá alimentos habituales y accesibles de la zona; no uses ingredientes caros o poco comunes. ${LEARNING_INSTRUCTION}`;
+  const instructions = `Proponé una sola comida en español rioplatense y medidas caseras. Si input contiene portionGuidance, su campo hint describe, en medidas caseras, el tamaño OBLIGATORIO de esta comida: elegí alimentos reales que encajen en ese tamaño, sin repetir números de kcal ni mencionar calorías. Respetá la comida, las preferencias y restricciones que aparecen en el contexto. ${ALLERGY_RULE} No agregues exclusiones no indicadas. No des gramos, calorías ni porcentajes. Es un borrador que revisará un profesional. No afirmes equivalencia clínica. ${singleMealStyleRule(mealKey)} ${mealKey === "lunch" ? lunchPlaceRule(patient.lunchPlace) : ""} Priorizá alimentos habituales y accesibles de la zona; no uses ingredientes caros o poco comunes. ${singleMealSettingsRule(resolved)} ${routineRule(patient)} ${LEARNING_INSTRUCTION}`;
   let mustFix;
   for (let attempt = 0; attempt < 2; attempt++) {
     const result = await callOpenAI({ name: "replacement_meal", schema: mealSchema, instructions, input: mustFix ? { ...base, mustFix } : base });
     if (!result.meal?.trim() || hasExactNutritionAmounts(result.meal)) throw fail("La sugerencia no vino en medidas caseras. No se aplicó; volvé a intentar.", 502);
     result.meal = cleanPlateWording(result.meal);
     const conflicts = analyzeText(patient, result.meal).filter(item => item.severity === "allergy");
-    const snackProblems = findSnackProblems({ days: [{ day: day.day, [mealKey]: result.meal }] });
+    const asDraft = { days: [{ day: day.day, [mealKey]: result.meal }] };
+    const snackProblems = [...findSnackProblems(asDraft), ...findMissingEquipment(asDraft, patient).map(item => ({ ...item, equipment: true }))];
     if (!conflicts.length && (!snackProblems.length || attempt === 1)) return result;
     if (attempt === 1) throw fail(CONFLICT_ERROR, 502); // la alergia persiste: no se aplica nada
-    mustFix = [...conflicts.map(item => `«${item.food}» coincide con la alergia o intolerancia «${item.restriction}»`), ...snackProblems.map(describeSnackProblem)];
+    mustFix = [...conflicts.map(item => `«${item.food}» coincide con la alergia o intolerancia «${item.restriction}»`), ...snackProblems.map(item => item.equipment ? describeMissingEquipment(item) : describeSnackProblem(item))];
   }
   throw fail(CONFLICT_ERROR, 502);
 }

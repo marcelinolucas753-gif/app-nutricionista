@@ -24,6 +24,7 @@ export const REASON_PHRASES = {
 export function buildLearning(rows, patient = {}, { slot } = {}) {
   const seen = new Set(), liked = [], disliked = [], planCounts = {};
   for (const row of Array.isArray(rows) ? rows : []) {
+    if (row.patient_ref && row.patient_ref !== patient?.id) continue; // 👎 «solo para esa persona»
     if (row.scope === "plan") {
       if (row.rating === "down") for (const reason of row.reasons || []) planCounts[reason] = (planCounts[reason] || 0) + 1;
       continue;

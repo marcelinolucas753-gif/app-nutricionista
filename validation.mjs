@@ -12,6 +12,8 @@ export function isIsoDate(value) {
   return Number.isFinite(time) && new Date(time).toISOString().slice(0, 10) === value;
 }
 
+import { COOKING_TIMES, KITCHEN_TOOLS, cleanAiSettings } from "./menu-rules.mjs";
+
 const text = (value, max) => typeof value === "string" ? value.slice(0, max) : "";
 const finite = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
 
@@ -78,6 +80,8 @@ export function validatedDocument(body) {
     if ("phone" in patient) patient.phone = text(patient.phone, 40);
     if ("email" in patient) patient.email = text(patient.email, 120);
     if ("allergies" in patient) patient.allergies = text(patient.allergies, 1000);
+    if ("cookingTime" in patient) patient.cookingTime = Object.hasOwn(COOKING_TIMES, patient.cookingTime) ? patient.cookingTime : "";
+    if ("kitchen" in patient) patient.kitchen = Array.isArray(patient.kitchen) ? [...new Set(patient.kitchen.filter(key => typeof key === "string" && Object.hasOwn(KITCHEN_TOOLS, key)))] : [];
     if ("goals" in patient) patient.goals = cleanGoals(patient.goals);
     if ("history" in patient) patient.history = cleanHistory(patient.history);
     if ("shoppingList" in patient) patient.shoppingList = cleanShoppingList(patient.shoppingList);
@@ -90,7 +94,10 @@ export function validatedDocument(body) {
     if (appointmentIds.has(item.id)) throw fail("Hay turnos repetidos en el envío.");
     appointmentIds.add(item.id);
   }
-  return { patients, appointments: body.appointments, templates: cleanTemplates(body.templates) };
+  const document = { patients, appointments: body.appointments, templates: cleanTemplates(body.templates) };
+  // Una versión vieja de la app no manda los ajustes: en ese caso el servidor conserva los guardados.
+  if (body.aiSettings !== undefined) document.aiSettings = cleanAiSettings(body.aiSettings);
+  return document;
 }
 
 /** Peso cargado por la persona desde el portal. */
