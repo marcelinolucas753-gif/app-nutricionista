@@ -6,7 +6,8 @@ import { extname, join, normalize, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { pool, withProfessional, writeAudit } from "./db.mjs";
 import { createEncryptedBackup, validateBackupKey, backupStatus } from "./backup.mjs";
-import { fail, validatedDocument, validatePortalNote, validatePortalWeight } from "./validation.mjs";
+import { fail, portalDraftView, validatedDocument, validatePortalNote, validatePortalWeight } from "./validation.mjs";
+import { CONTENT_TYPES, clientIp as requestIp, resolvePublicFile, sameOriginOk } from "./security.mjs";
 import { measureAi, recentFeedback, saveFeedback, validateFeedback } from "./ai-metrics.mjs";
 import { buildLearning } from "./learning.mjs";
 import { createRecipe, generateShoppingList, generateWeeklyMenu, regenerateMeal, suggestSubstitutions, summarizeConsultations } from "./ai.mjs";
@@ -21,13 +22,7 @@ if (production && (!process.env.DATABASE_URL || !process.env.BACKUP_ENCRYPTION_K
 }
 if (production) validateBackupKey();
 
-const types = { ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".mjs": "text/javascript; charset=utf-8", ".webmanifest": "application/manifest+json", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg" };
-
-// Solo estos archivos se publican. Todo lo demás (server.mjs, .env, migraciones,
-// respaldos, package.json…) nunca se entrega, aunque esté en la misma carpeta.
-const PUBLIC_FILES = new Set(["/index.html", "/portal.html", "/app.js", "/portal.js", "/styles.css", "/sw.js", "/manifest.webmanifest", "/icon.svg", "/icon-192.png", "/icon-512.png", "/nutrition.mjs", "/safety.mjs", "/contact.mjs", "/charts.mjs", "/features.css"]);
-const PUBLIC_PREFIXES = ["/js/", "/recetas/"];
-function isPublicPath(pathname) { return PUBLIC_FILES.has(pathname) || PUBLIC_PREFIXES.some(prefix => pathname.startsWith(prefix) && pathname.length > prefix.length); }
+const trustProxy = production || process.env.TRUST_PROXY === "1";
 
 const rateBuckets = new Map();
 function rateAllowed(key, limit, windowMs) {
@@ -38,14 +33,16 @@ function rateAllowed(key, limit, windowMs) {
   if (bucket.count >= limit) return false;
   bucket.count += 1; return true;
 }
-function clientIp(req) { return req.socket.remoteAddress || "unknown"; }
-function portalClientKey(req) { const forwarded = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim(); return forwarded || req.socket.remoteAddress || "unknown"; }
+function clientIp(req) { return requestIp(req, trustProxy); }
+function portalClientKey(req) { return clientIp(req); }
 function failuresBlocked(key, limit) { const bucket = rateBuckets.get(key); return Boolean(bucket && bucket.expiresAt > Date.now() && bucket.count >= limit); }
 function recordFailure(key, windowMs) {
   const now = Date.now(); const bucket = rateBuckets.get(key);
   if (!bucket || bucket.expiresAt <= now) rateBuckets.set(key, { startedAt: now, expiresAt: now + windowMs, count: 1 }); else bucket.count += 1;
 }
 const PORTAL_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const DUMMY_SALT = "0".repeat(32);
 const PORTAL_SESSION_DAYS = 30;
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sin I, O, 0 ni 1 para evitar confusiones al dictarlo
 
@@ -55,12 +52,14 @@ function sessionCookie(token, maxAge) { return `nutri_session=${token}; Path=/; 
 function json(res, status, body, headers = {}) { res.writeHead(status, { "Content-Type": "application/json; charset=utf-8", ...headers }); res.end(JSON.stringify(body)); }
 
 async function readJson(req, maxBytes = 100_000) {
-  let raw = "";
+  if (Number(req.headers["content-length"]) > maxBytes) throw fail("La solicitud supera el tamaño permitido.", 413);
+  const chunks = []; let size = 0;
   for await (const chunk of req) {
-    raw += chunk;
-    if (Buffer.byteLength(raw) > maxBytes) throw fail("La solicitud supera el tamaño permitido.", 413);
+    size += chunk.length;
+    if (size > maxBytes) throw fail("La solicitud supera el tamaño permitido.", 413);
+    chunks.push(chunk);
   }
-  try { return JSON.parse(raw || "{}"); } catch { throw fail("No se pudo leer la solicitud.", 400); }
+  try { return JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}"); } catch { throw fail("No se pudo leer la solicitud.", 400); }
 }
 
 async function sessionFor(req) {
@@ -117,10 +116,13 @@ async function handle(req, res) {
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   res.setHeader("Referrer-Policy", "no-referrer");
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+  res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
   res.setHeader("Cache-Control", "no-store");
   res.setHeader("Content-Security-Policy", "default-src 'self'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; object-src 'none'; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self'; connect-src 'self'");
   if (production) res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   const pathname = new URL(req.url, "http://localhost").pathname;
+  if (!sameOriginOk(req)) { json(res, 403, { error: "El pedido no viene de esta página." }); return; }
 
   if (pathname === "/api/health" && req.method === "GET") {
     try { if (!process.env.DATABASE_URL) throw new Error("database not configured"); await pool.query("SELECT 1"); json(res, 200, { ok: true, storage: "ready" }); }
@@ -130,20 +132,26 @@ async function handle(req, res) {
   if (pathname === "/api/status" && req.method === "GET") {
     const user = await sessionFor(req);
     let storageReady = false; try { if (process.env.DATABASE_URL) { await pool.query("SELECT 1"); storageReady = true; } } catch { /* no detail exposed */ }
-    json(res, 200, { passwordRequired: true, authenticated: Boolean(user), professional: user ? { id: user.id, name: user.display_name } : null, storageReady, aiConfigured: Boolean(process.env.OPENAI_API_KEY), backup: user ? await backupStatus() : null }); return;
+    json(res, 200, { passwordRequired: true, authenticated: Boolean(user), professional: user ? { id: user.id, name: user.display_name } : null, storageReady, aiConfigured: user ? Boolean(process.env.OPENAI_API_KEY) : false, backup: user ? await backupStatus() : null }); return;
   }
   if (pathname === "/api/login" && req.method === "POST") {
     try {
       if (!process.env.DATABASE_URL) throw fail("Falta configurar la base de datos compartida en el servidor.", 503);
-      if (!rateAllowed(`login:${clientIp(req)}`, 10, 15 * 60 * 1000)) throw fail("Demasiados intentos. Esperá 15 minutos y volvé a intentar.", 429);
+      const ipKey = `login-fail:${clientIp(req)}`;
+      if (failuresBlocked(ipKey, 10)) throw fail("Demasiados intentos. Esperá 15 minutos y volvé a intentar.", 429);
       const body = await readJson(req, 4000); const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : ""; const password = typeof body.password === "string" ? body.password : "";
-      if (!email || !password || password.length > 200) throw fail("El correo o la contraseña no coinciden.", 401);
+      const emailKey = `login-fail-account:${email.slice(0, 120)}`;
+      // Además del límite por dirección (que se puede esquivar falseando encabezados), se limita por cuenta.
+      if (email && failuresBlocked(emailKey, 10)) throw fail("Demasiados intentos con esta cuenta. Esperá 15 minutos y volvé a intentar.", 429);
+      if (!email || !password || password.length > 200) { recordFailure(ipKey, LOGIN_WINDOW_MS); throw fail("El correo o la contraseña no coinciden.", 401); }
       const result = await pool.query("SELECT id,display_name,email,password_salt,password_hash FROM professionals WHERE email=$1 AND active=true", [email]);
       const account = result.rows[0];
-      const supplied = account ? await scrypt(password, account.password_salt, 64) : randomBytes(64);
+      // Se calcula siempre el hash, exista o no la cuenta, para que el tiempo de respuesta no delate qué correos existen.
+      const supplied = await scrypt(password, account?.password_salt || DUMMY_SALT, 64);
       const expected = Buffer.from(account?.password_hash || "", "hex");
       const valid = account && expected.length === supplied.length && timingSafeEqual(expected, supplied);
-      if (!valid) { await writeAudit(null, "login", "denied").catch(() => {}); throw fail("El correo o la contraseña no coinciden.", 401); }
+      if (!valid) { recordFailure(ipKey, LOGIN_WINDOW_MS); recordFailure(emailKey, LOGIN_WINDOW_MS); await writeAudit(account?.id || null, "login", "denied").catch(() => {}); throw fail("El correo o la contraseña no coinciden.", 401); }
+      rateBuckets.delete(emailKey);
       const token = randomBytes(32).toString("base64url"); const tokenHash = digest(token);
       await pool.query("DELETE FROM app_sessions WHERE expires_at<=now()");
       await pool.query("INSERT INTO app_sessions (token_hash,professional_id,expires_at) VALUES ($1,$2,now()+interval '12 hours')", [tokenHash, account.id]);
@@ -169,7 +177,7 @@ async function handle(req, res) {
       await pool.query("UPDATE professionals SET password_salt=$2,password_hash=$3,password_changed_at=now() WHERE id=$1", [user.id, salt, hash]);
       await pool.query("DELETE FROM app_sessions WHERE professional_id=$1 AND token_hash<>$2", [user.id, user.token_hash]); await writeAudit(user.id, "password_change", "success");
       json(res, 200, { ok: true });
-    } catch (error) { json(res, error.status || 500, { error: error.message || "No se pudo cambiar la contraseña." }); }
+    } catch (error) { json(res, error.status || 500, { error: error.status ? error.message : "No se pudo cambiar la contraseña." }); }
     return;
   }
   if (pathname === "/api/data/version" && req.method === "GET") {
@@ -230,7 +238,7 @@ async function handle(req, res) {
       });
       if (outcome.conflict) { json(res, 409, { error: "Esta ficha cambió desde otro dispositivo. Recargá para ver la versión más reciente; no se sobrescribió.", version: outcome.version }); return; }
       json(res, 200, { ok: true, version: outcome.version });
-    } catch (error) { json(res, error.status || 500, { error: error.message || "No se pudieron guardar los datos." }); }
+    } catch (error) { json(res, error.status || 500, { error: error.status ? error.message : "No se pudieron guardar los datos." }); }
     return;
   }
   if (pathname === "/api/generate-menu" && req.method === "POST") {
@@ -242,7 +250,7 @@ async function handle(req, res) {
       const learning = buildLearning(await recentFeedback(user.id), patient), settings = await loadAiSettings(user.id);
       const output = await measureAi("ai_weekly_menu", user.id, () => generateWeeklyMenu(patient, learning, settings));
       await writeAudit(user.id, "ai_weekly_menu", "success").catch(() => {}); json(res, 200, output);
-    } catch (error) { json(res, error.status || 500, { error: error.message || "No se pudo generar el menú." }); }
+    } catch (error) { json(res, error.status || 500, { error: error.status ? error.message : "No se pudo generar el menú." }); }
     return;
   }
   if (pathname === "/api/feedback" && req.method === "POST") {
@@ -266,7 +274,7 @@ async function handle(req, res) {
       else throw fail("No encontramos esa función de IA.", 404);
       await writeAudit(user.id, action, "success").catch(() => {});
       json(res, 200, result);
-    } catch (error) { json(res, error.status || 500, { error: error.message || "No se pudo completar la propuesta." }); }
+    } catch (error) { json(res, error.status || 500, { error: error.status ? error.message : "No se pudo completar la propuesta." }); }
     return;
   }
 
@@ -295,7 +303,7 @@ async function handle(req, res) {
       }
       await writeAudit(user.id, "portal_access_create", "success").catch(() => {});
       json(res, 200, { ok: true, token, shortCode });
-    } catch (error) { json(res, error.status || 500, { error: error.message || "No se pudo generar el acceso." }); }
+    } catch (error) { json(res, error.status || 500, { error: error.status ? error.message : "No se pudo generar el acceso." }); }
     return;
   }
   if (pathname.startsWith("/api/patient-access/") && req.method === "GET") {
@@ -367,7 +375,7 @@ async function handle(req, res) {
       json(res, 200, {
         professionalName: profResult.rows[0]?.display_name,
         patientName: patient.name,
-        draft: patient.approvedAt ? patient.draft : null,
+        draft: patient.approvedAt ? portalDraftView(patient.draft) : null,
         consultations: (patient.consultations || []).map(item => ({ date: item.date })).sort((a, b) => String(b.date).localeCompare(String(a.date))),
         measurements: (patient.measurements || []).map(item => ({ date: item.date, weight: item.weight, height: item.height })).sort((a, b) => String(b.date).localeCompare(String(a.date))),
         pendingWeights: sent.rows.filter(row => !handled.has(row.id) && row.data?.weight).map(row => ({ date: row.data.date, weight: row.data.weight })),
@@ -406,14 +414,15 @@ async function handle(req, res) {
   }
 
   if (req.method !== "GET" && req.method !== "HEAD") { res.writeHead(405); res.end(); return; }
-  let staticPath; try { staticPath = decodeURIComponent(pathname); } catch { res.writeHead(400); res.end(); return; }
-  if (staticPath === "/") staticPath = "/index.html";
-  if (!isPublicPath(staticPath) || !types[extname(staticPath)]) { res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" }); res.end("No encontramos ese archivo."); return; }
+  const staticPath = resolvePublicFile(pathname);
+  if (!staticPath) { res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" }); res.end("No encontramos ese archivo."); return; }
   const file = normalize(join(root, staticPath));
   if (file !== rootPath && !file.startsWith(rootPath + sep)) { res.writeHead(403); res.end(); return; }
-  try { const data = await readFile(file); res.writeHead(200, { "Content-Type": types[extname(file)] || "application/octet-stream" }); res.end(req.method === "HEAD" ? undefined : data); }
+  try { const data = await readFile(file); res.writeHead(200, { "Content-Type": CONTENT_TYPES[extname(file)] || "application/octet-stream" }); res.end(req.method === "HEAD" ? undefined : data); }
   catch { res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" }); res.end("No encontramos ese archivo."); }
 }
+
+process.on("unhandledRejection", reason => console.error(`Promesa sin manejar: ${reason?.message || reason}`));
 
 const server = createServer((req, res) => {
   handle(req, res).catch(error => {

@@ -12,6 +12,7 @@ export function isIsoDate(value) {
   return Number.isFinite(time) && new Date(time).toISOString().slice(0, 10) === value;
 }
 
+import { MEAL_SLOTS } from "./safety.mjs";
 import { COOKING_TIMES, KITCHEN_TOOLS, cleanAiSettings } from "./menu-rules.mjs";
 
 const text = (value, max) => typeof value === "string" ? value.slice(0, max) : "";
@@ -98,6 +99,25 @@ export function validatedDocument(body) {
   // Una versión vieja de la app no manda los ajustes: en ese caso el servidor conserva los guardados.
   if (body.aiSettings !== undefined) document.aiSettings = cleanAiSettings(body.aiSettings);
   return document;
+}
+
+const PORTAL_MEAL_KEYS = [...MEAL_SLOTS.map(([key]) => key), "extra"];
+/**
+ * Lo que la persona ve de su plan. Se arma campo por campo: las notas de revisión y cualquier
+ * dato interno del borrador (advertencias para la profesional, etc.) nunca salen por el portal.
+ */
+export function portalDraftView(draft) {
+  if (!draft || typeof draft !== "object" || !Array.isArray(draft.days)) return null;
+  const view = {
+    intro: text(draft.intro, 1500),
+    days: draft.days.slice(0, 7).map(day => {
+      const item = { day: text(day?.day, 40) };
+      for (const key of PORTAL_MEAL_KEYS) if (typeof day?.[key] === "string") item[key] = text(day[key], 1000);
+      return item;
+    }),
+    recommendations: Array.isArray(draft.recommendations) ? draft.recommendations.filter(item => typeof item === "string").slice(0, 20).map(item => text(item, 500)) : []
+  };
+  return view;
 }
 
 /** Peso cargado por la persona desde el portal. */

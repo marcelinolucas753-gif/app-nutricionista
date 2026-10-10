@@ -9,6 +9,9 @@ export const pool = new Pool({
   application_name: "nutri-guia-clinica"
 });
 
+// Sin este aviso, un corte de la conexión con la base (reinicio, mantenimiento) tira abajo todo el servidor.
+pool.on("error", error => console.error(`Conexión inactiva con la base falló: ${error.message}`));
+
 export async function withProfessional(professionalId, callback) {
   const client = await pool.connect();
   try {

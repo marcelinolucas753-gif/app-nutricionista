@@ -10,6 +10,6 @@ try {
   }
   console.log("Base de datos actualizada.");
 } catch (error) {
-  console.error("No se pudo actualizar la base. Verificá DATABASE_URL y la conexión.");
+  console.error(`No se pudo actualizar la base. Verificá DATABASE_URL y la conexión. Detalle: ${error?.message || error}`);
   process.exitCode = 1;
 } finally { await pool.end(); }
