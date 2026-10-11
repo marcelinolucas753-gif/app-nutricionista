@@ -57,6 +57,18 @@ const TORTILLA_NO_HUEVO = /^de (?:trigo|maiz|harina|avena)(?![a-z0-9])/;
 
 const LACTEOS_FOODS = ["leche", "lacteo", "queso", "yogur", "yogurt", "ricota", "manteca", "mantequilla", "crema", "dulce de leche", "muzzarella", "mozzarella", "mozarela", "cremoso", "cuartirolo", "provolone", "parmesano", "sardo", "reggianito", "requeson", "flan", "kefir", "helado", "leche en polvo", "caseina", "suero de leche", "bechamel", "salsa blanca", "postre de leche"];
 
+// Alimentación vegetariana o vegana, y "no como carne": sin estos grupos, escribir «vegetariana» en la ficha
+// no detectaba nada (ni bife ni pollo ni jamón). «Carne» sola se toma como carne vacuna y derivados.
+const PESCADO_FOODS = ["pescado", "merluza", "salmon", "atun", "caballa", "sardina", "surubi", "dorado", "pacu", "trucha", "lenguado", "anchoa", "bacalao", "pejerrey", "boga", "abadejo", "surimi"];
+const MARISCOS_FOODS = ["marisco", "crustaceo", "molusco", "camaron", "camarones", "langostino", "calamar", "mejillon", "pulpo", "cangrejo", "centolla", "vieira", "almeja", "ostra", "langosta", "frutos de mar"];
+const CERDO_FOODS = ["cerdo", "bondiola", "panceta", "jamon", "pechito", "tocino", "chorizo"];
+const POLLO_FOODS = ["pollo", "pechuga", "muslo", "pata muslo", "suprema", "alita", "pavo", "gallina", "nugget", "ave"];
+const CARNE_ROJA_FOODS = ["carne", "carne picada", "carne vacuna", "vacuno", "ternera", "bife", "asado", "vacio", "costilla", "costillar", "matambre", "nalga", "peceto", "cuadril", "lomo", "lomito", "entrana", "osobuco", "falda", "bola de lomo", "roast beef", "cordero", "chorizo", "morcilla", "salchicha", "salame", "mortadela", "fiambre", "paleta", "pate", "bacon"];
+// Platos que pueden ser de carne o vegetales («milanesa de berenjena», «hamburguesa de lentejas»).
+const PLATOS_DE_CARNE = ["milanesa", "hamburguesa", "albondiga"];
+const DE_VEGETAL = /^de (?:soja|vegetal(?:es)?|verduras?|berenjenas?|lentejas?|garbanzos?|legumbres|zapallo|calabaza|zanahorias?|quinoa|arroz|avena|choclo|espinacas?|acelgas?|porotos?|hongos|champinones|seitan)(?![a-z0-9])|^(?:vegetal(?:es)?|veggie|vegana|vegano|vegetariana|vegetariano)(?![a-z0-9])/;
+const DE_OTRA_CARNE = /^de (?:pollo|pavo|ave|aves|pescado|merluza|atun|salmon)(?![a-z0-9])/;
+
 /**
  * Cada grupo: triggers (palabras que, dentro de lo declarado, activan el grupo),
  * foods (alimentos a buscar en el menú), strict (alimentos que nunca se
@@ -64,25 +76,32 @@ const LACTEOS_FOODS = ["leche", "lacteo", "queso", "yogur", "yogurt", "ricota", 
  * alimento, indican que no corresponde, p. ej. "leche de almendras").
  */
 const GROUPS = [
-  { id: "lacteos", label: "lácteos", triggers: ["leche", "lacteo", "lacteos", "aplv", "caseina", "proteina de la leche", "proteina de leche", "proteinas de la leche", "queso", "yogur"], foods: LACTEOS_FOODS, excuse: [LECHE_VEGETAL] },
+  { id: "lacteos", label: "lácteos", triggers: ["leche", "lacteo", "lacteos", "aplv", "caseina", "proteina de la leche", "proteina de leche", "proteinas de la leche", "queso", "yogur", "vegano", "vegana"], foods: LACTEOS_FOODS, excuse: [LECHE_VEGETAL] },
   { id: "lactosa", label: "lactosa", triggers: ["lactosa"], foods: LACTEOS_FOODS, excuse: [SIN_LACTOSA, LECHE_VEGETAL] },
   { id: "gluten", label: "gluten (TACC)", triggers: ["gluten", "celiaco", "celiaca", "celiaquia", "celiacos", "tacc", "trigo"],
     strict: ["trigo", "harina de trigo", "cebada", "centeno", "malta", "seitan", "semola", "cuscus", "cous cous", "bulgur"],
     foods: ["trigo", "harina de trigo", "cebada", "centeno", "malta", "seitan", "semola", "cuscus", "cous cous", "bulgur", "avena", "pan", "pan rallado", "tostada", "galletita", "galleta", "fideo", "pasta", "tallarin", "espagueti", "spaghetti", "ravioles", "canelones", "noqui", "sorrentinos", "lasana", "pizza", "empanada", "tarta", "masa", "rapidita", "wrap", "milanesa", "rebozado", "empanado", "rebozador", "bizcochuelo", "budin", "torta", "factura", "medialuna", "bizcocho", "grisin", "cracker", "panqueque", "crepe", "cerveza", "sandwich", "sanguche", "tostado", "harina", "cereales", "cereal", "granola", "muesli"],
     excuse: [SIN_GLUTEN, SIN_CEREAL_GLUTEN] },
-  { id: "huevo", label: "huevo", triggers: ["huevo", "huevos", "clara", "yema", "albumina"],
+  { id: "huevo", label: "huevo", triggers: ["huevo", "huevos", "clara", "yema", "albumina", "vegano", "vegana"],
     foods: ["huevo", "clara", "yema", "omelette", "omelet", "tortilla", "mayonesa", "merengue", "souffle", "frittata", "revuelto", "flan", "albumina"], excuse: [TORTILLA_NO_HUEVO] },
   { id: "mani", label: "maní", triggers: ["mani", "cacahuate", "cacahuete"], foods: ["mani", "cacahuate", "cacahuete", "manteca de mani", "pasta de mani", "mantequilla de mani"] },
   { id: "frutos_secos", label: "frutos secos", triggers: ["frutos secos", "fruto seco", "nuez", "nueces", "almendra", "almendras", "avellana", "avellanas", "castana", "castanas", "pistacho", "pistachos", "pecan", "macadamia", "caju", "anacardo"],
     foods: ["frutos secos", "fruto seco", "nuez", "nueces", "almendra", "avellana", "castana", "castana de caju", "caju", "anacardo", "pistacho", "pecan", "macadamia", "mani", "turron"], excuse: [/^moscada(?![a-z0-9])/] },
   { id: "soja", label: "soja", triggers: ["soja", "soya"], foods: ["soja", "soya", "tofu", "tempeh", "edamame", "miso"] },
   { id: "pescado", label: "pescado", triggers: ["pescado", "pescados", "merluza", "salmon", "atun", "caballa", "sardina", "trucha", "surubi", "bacalao"],
-    foods: ["pescado", "merluza", "salmon", "atun", "caballa", "sardina", "surubi", "dorado", "pacu", "trucha", "lenguado", "anchoa", "bacalao", "pejerrey", "boga", "abadejo", "surimi"] },
+    foods: PESCADO_FOODS },
   { id: "mariscos", label: "mariscos", triggers: ["marisco", "mariscos", "crustaceo", "crustaceos", "molusco", "moluscos", "camaron", "camarones", "langostino", "langostinos", "calamar", "mejillon", "frutos de mar"],
-    foods: ["marisco", "crustaceo", "molusco", "camaron", "camarones", "langostino", "calamar", "mejillon", "pulpo", "cangrejo", "centolla", "vieira", "almeja", "ostra", "langosta", "frutos de mar"] },
+    foods: MARISCOS_FOODS },
   { id: "sesamo", label: "sésamo", triggers: ["sesamo", "ajonjoli", "tahini", "tahina"], foods: ["sesamo", "ajonjoli", "tahini", "tahina"] },
   { id: "legumbres", label: "legumbres", triggers: ["legumbre", "legumbres"], foods: ["legumbres", "lenteja", "garbanzo", "poroto", "arveja", "soja", "habas", "hummus"] },
-  { id: "cerdo", label: "cerdo", triggers: ["cerdo"], foods: ["cerdo", "bondiola", "panceta", "jamon", "pechito", "tocino", "chorizo"] }
+  { id: "cerdo", label: "cerdo", triggers: ["cerdo"], foods: CERDO_FOODS },
+  { id: "fiambres", label: "fiambres y embutidos", triggers: ["fiambre", "embutido"], foods: ["fiambre", "embutido", "jamon", "jamon crudo", "jamon cocido", "salame", "mortadela", "paleta", "lomito", "pate", "bacon", "salchicha", "salchichon", "longaniza", "chorizo", "morcilla", "panceta", "tocino"] },
+  { id: "pollo", label: "pollo y aves", triggers: ["pollo", "ave", "pavo", "gallina"], foods: POLLO_FOODS, excuse: [DE_VEGETAL] },
+  { id: "carne_roja", label: "carne vacuna y derivados", triggers: ["carne", "carne roja", "carnes rojas", "carne vacuna", "carne de vaca", "vacuno"],
+    foods: [...CARNE_ROJA_FOODS, ...PLATOS_DE_CARNE], excuse: [DE_VEGETAL, DE_OTRA_CARNE] },
+  { id: "vegetariano", label: "carnes y pescados (alimentación vegetariana)", triggers: ["vegetariano", "vegetariana", "vegano", "vegana"],
+    foods: [...CARNE_ROJA_FOODS, ...PLATOS_DE_CARNE, ...POLLO_FOODS, ...CERDO_FOODS, ...PESCADO_FOODS, ...MARISCOS_FOODS, "conejo"], excuse: [DE_VEGETAL] },
+  { id: "origen_animal", label: "otros alimentos de origen animal (alimentación vegana)", triggers: ["vegano", "vegana"], foods: ["miel", "gelatina", "grenetina"] }
 ];
 
 const LEADING_PHRASES = [

@@ -26,7 +26,9 @@ test("las fichas de ejemplo tienen los datos mínimos y calculan requerimientos"
   assert.ok(FICHAS_EJEMPLO.length >= 5);
   for (const ficha of FICHAS_EJEMPLO) {
     assert.ok(ficha.age && ficha.condition && ficha.goal, ficha.name);
-    assert.ok(calculatePatientRequirements(ficha), `${ficha.name} sin requerimientos`);
+    // La app no calcula calorías en embarazo (decisión de nutrition.mjs): esa ficha prueba el menú sin esos números.
+    if (ficha.id === "ej-embarazo") assert.equal(calculatePatientRequirements(ficha), null, "embarazo no debe calcularse");
+    else assert.ok(calculatePatientRequirements(ficha), `${ficha.name} sin requerimientos`);
   }
 });
 
@@ -73,4 +75,23 @@ test("si la IA falla en una ficha, se anota el error y se sigue con las demás",
     assert.equal(evaluation.summary.errors, 2);
     assert.match(formatReport(evaluation), /No se pudo generar/);
   } finally { globalThis.fetch = original; mock.restoreAll(); }
+});
+
+test("las fichas de celiaquía, vegetariana, embarazo y lactosa están y la evaluación detecta lo que no corresponde", () => {
+  const ficha = id => FICHAS_EJEMPLO.find(item => item.id === id);
+  for (const id of ["ej-celiaca", "ej-vegetariana", "ej-embarazo", "ej-lactosa"]) assert.ok(ficha(id), id);
+  const withLunch = lunch => { const menu = good(); menu.days[0].lunch = lunch; return menu; };
+  const failed = (patient, lunch) => checkMenu(patient, withLunch(lunch)).filter(check => !check.ok).map(check => check.name);
+  assert.ok(failed(ficha("ej-celiaca"), "Fideos con tuco").includes("Sin alergias"));
+  assert.ok(failed(ficha("ej-lactosa"), "Pasta con salsa blanca y queso").includes("Sin alergias"));
+  assert.ok(failed(ficha("ej-vegetariana"), "Bife con puré").includes("Sin alimentos que evita"));
+  assert.ok(failed(ficha("ej-embarazo"), "Sándwich de jamón crudo").includes("Sin alimentos que evita"));
+  // Los menús correctos pasan: sin falsos reclamos sobre las comidas del menú de referencia.
+  for (const id of ["ej-celiaca", "ej-vegetariana", "ej-embarazo", "ej-lactosa"]) {
+    const patient = ficha(id);
+    const menu = good();
+    menu.days.forEach((day, i) => { day.lunch = i > 4 ? "Libre" : ["Arroz con lentejas", "Polenta con salsa de verduras", "Pastel de zapallo y papa", "Guiso de arroz y zanahoria", "Revuelto de zapallitos"][i]; day.merienda = "Té con banana"; day.breakfast = "Mate cocido con fruta"; day.snack2 = "Yogur sin lactosa con fruta"; day.snack1 = "Una manzana"; });
+    const problems = checkMenu(patient, menu).filter(check => !check.ok && ["Sin alergias", "Sin alimentos que evita"].includes(check.name));
+    assert.deepEqual(problems, [], id);
+  }
 });

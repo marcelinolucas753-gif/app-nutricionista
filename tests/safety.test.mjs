@@ -78,3 +78,42 @@ test("sin alergias cargadas no hay conflictos", () => {
   assert.deepEqual(analyzeText({}, "Queso, nueces y pan"), []);
   assert.deepEqual(analyzeDraft({}, null), []);
 });
+
+test("alimentación vegetariana: marca carnes, aves, cerdo y pescados, pero no platos vegetales", () => {
+  for (const [text, food] of [["Bife con ensalada", "bife"], ["Pollo al horno con arroz", "pollo"], ["Sándwich de jamón y queso", "jamon"], ["Merluza al horno", "merluza"], ["Asado con ensalada", "asado"], ["Langostinos con arroz", "langostino"]]) {
+    assert.ok(foods("vegetariana", text).includes(food), text);
+  }
+  for (const text of ["Milanesa de berenjena con ensalada", "Hamburguesa de lentejas con arroz", "Guiso de lentejas con arroz", "Café con leche de vaca", "Tostadas con queso y huevo revuelto", "Tarta de espinaca con zapallo"]) assert.deepEqual(foods("vegetariana", text), [], text);
+  assert.ok(foods("vegetariana", "Milanesa de carne con puré").includes("milanesa"));
+});
+
+test("alimentación vegana: además suma lácteos, huevo, miel y gelatina, pero acepta leches vegetales", () => {
+  const found = foods("vegana", "Tostadas con queso, huevo y miel");
+  for (const food of ["queso", "huevo", "miel"]) assert.ok(found.includes(food), food);
+  assert.ok(foods("vegano", "Postre de gelatina").includes("gelatina"));
+  assert.deepEqual(foods("vegana", "Café con leche de almendras y tostadas con palta"), []);
+});
+
+test("«no come carne» se toma como carne vacuna y derivados; el pollo se evita solo si se declara", () => {
+  assert.ok(foods("no come carne", "Milanesa de carne con puré").includes("carne"));
+  assert.ok(foods("no come carne", "Bife a la plancha").includes("bife"));
+  assert.deepEqual(foods("no come carne", "Milanesa de pollo con puré"), []);
+  assert.deepEqual(foods("no come carne", "Pollo al horno con papas"), []);
+  assert.deepEqual(foods("carne, pollo, pescado", "Lentejas con arroz"), []);
+  for (const text of ["Pechuga a la plancha", "Suprema con ensalada", "Pavo con verduras"]) assert.ok(foods("pollo", text).length > 0, text);
+});
+
+test("evitar carne en una ficha dispara alerta en el menú y se distingue de la alergia", () => {
+  const patient = { allergies: "", avoids: "vegetariana" };
+  const draft = { days: Array.from({ length: 7 }, (_, i) => ({ day: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"][i], breakfast: "Té con tostadas", snack1: "Fruta", lunch: i === 3 ? "Bife con puré" : "Lentejas con arroz", snack2: "Yogur con granola", merienda: "Mate", dinner: "Sopa de verduras", extra: "" })) };
+  const conflicts = analyzeDraft(patient, draft);
+  assert.equal(conflicts.length, 1);
+  assert.equal(conflicts[0].dayLabel, "Jueves");
+  assert.equal(conflicts[0].severity, "avoid");
+});
+
+test("evitar «fiambres» o «embutidos» detecta jamón, salame y similares", () => {
+  for (const text of ["Sándwich de jamón y queso", "Tostadas con salame", "Picada con mortadela", "Pizza con panceta"]) assert.ok(foods("fiambres", text).length > 0, text);
+  assert.ok(foods("sushi, fiambres, embutidos", "Sándwich de jamón crudo").includes("jamon"));
+  assert.deepEqual(foods("fiambres", "Tostadas con queso y tomate"), []);
+});
