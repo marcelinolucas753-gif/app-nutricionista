@@ -1,0 +1,24 @@
+name: Pruebas automáticas
+
+# Corre las pruebas en cada cambio que se sube a main y en cada pull request.
+# Si algo se rompe, GitHub muestra una cruz roja en el repositorio.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # La app solo depende de "pg" y las pruebas no se conectan a ninguna base real.
+      - run: npm install --no-audit --no-fund --no-package-lock
+      - run: npm test
