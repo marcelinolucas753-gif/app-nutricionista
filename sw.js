@@ -1,6 +1,6 @@
-const CACHE = "nutri-guia-v15";
-const FILES = ["/", "/portal.html", "/styles.css?v=15", "/features.css?v=15", "/app.js?v=15", "/portal.js", "/nutrition.mjs", "/safety.mjs", "/menu-rules.mjs", "/contact.mjs", "/charts.mjs",
-  "/js/util.js", "/js/state.js", "/js/nav.js", "/js/logic.js", "/js/agenda.js", "/js/patients.js", "/js/detail.js", "/js/plans.js", "/js/settings.js", "/js/feedback.js", "/js/meal-options.js", "/js/auth.js",
+const CACHE = "nutri-guia-v16";
+const FILES = ["/", "/portal.html", "/styles.css?v=16", "/features.css?v=16", "/app.js?v=16", "/portal.js", "/nutrition.mjs", "/safety.mjs", "/menu-rules.mjs", "/contact.mjs", "/charts.mjs",
+  "/js/util.js", "/js/state.js", "/js/nav.js", "/js/logic.js", "/js/agenda.js", "/js/patients.js", "/js/detail.js", "/js/plans.js", "/js/settings.js", "/js/feedback.js", "/js/ai-review.js", "/js/meal-options.js", "/js/auth.js",
   "/manifest.webmanifest", "/icon.svg", "/icon-192.png", "/icon-512.png"];
 
 // Un archivo que falle no debe impedir la instalación de los demás.

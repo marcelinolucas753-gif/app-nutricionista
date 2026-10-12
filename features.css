@@ -102,3 +102,25 @@
 .kitchen-tools legend { font-size: 13px; font-weight: 600; padding: 0 6px; }
 .feedback-only { display: inline-flex; align-items: center; gap: 4px; margin: 0; font-size: 12px; font-weight: 600; }
 .kitchen-tools .optional { font-size: 12px; font-weight: 400; color: var(--text-secondary); }
+
+/* Ajustes de la IA: opiniones guardadas y uso */
+.ai-panel { display: grid; gap: 12px; margin-top: 20px; max-width: 900px; }
+.ai-panel h2, .ai-panel h3 { margin: 0; }
+.ai-panel-tools { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 10px; }
+.ai-panel-tools label { display: grid; gap: 4px; font-size: 12px; font-weight: 600; }
+.feedback-list { display: grid; gap: 8px; }
+.feedback-item { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: start; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-panel); }
+.feedback-item.is-old { opacity: .65; }
+.feedback-rating { font-size: 20px; line-height: 1.2; }
+.feedback-body p { margin: 4px 0 0; font-size: 13px; overflow-wrap: anywhere; }
+.feedback-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.usage-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.usage-summary > div { padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); display: grid; gap: 2px; }
+.usage-summary b { font-size: 22px; }
+.usage-cost { margin: 0; }
+.usage-errors { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 13px; }
+.measure-table tfoot th, .measure-table tfoot td { font-weight: 800; border-top: 2px solid var(--border); }
+.measure-table tbody th { font-weight: 600; text-align: left; color: inherit; background: transparent; }
+
+.portal-security { margin-top: 20px; display: grid; gap: 10px; }
+.portal-security h2 { margin: 0; }

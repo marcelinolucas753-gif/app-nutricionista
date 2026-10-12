@@ -123,6 +123,12 @@ $("portal-logout").addEventListener("click", async () => {
   saveSession(null); showLogin();
 });
 
+$("portal-logout-all").addEventListener("click", async () => {
+  if (!window.confirm("¿Cerrar tu sesión en todos los dispositivos, incluido este? Para volver a entrar vas a necesitar tu código.")) return;
+  try { await call("/api/portal/logout-all", { method: "POST" }); } catch (error) { if (error.status !== 401) { toast(error.message); return; } }
+  saveSession(null); showLogin("Cerraste tu sesión en todos los dispositivos. Ingresá con tu código para volver a entrar.");
+});
+
 function submitter(form, path, buildBody, okMessage, after) {
   form.addEventListener("submit", async event => {
     event.preventDefault();

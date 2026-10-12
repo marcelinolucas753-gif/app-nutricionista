@@ -1,6 +1,7 @@
 import { $, escapeHTML, toast } from "./util.js";
 import { S, queueSave } from "./state.js";
 import { FOODS_AVOID_BY_DEFAULT, FOODS_COMMON, MAX_EXTRA_RULES } from "../menu-rules.mjs";
+import { renderAiPanels } from "./ai-review.js";
 
 /** Pantalla «Ajustes de la IA»: la profesional corrige las listas que usa la IA, sin tocar código. */
 const lines = text => String(text || "").split(/\r?\n/).map(line => line.trim()).filter(Boolean);
@@ -35,4 +36,5 @@ export function renderSettings() {
     S.aiSettings = { foodsCommon: null, foodsAvoid: null, extraRules: "" };
     queueSave(); renderSettings(); toast("Se restauraron las listas originales.");
   });
+  renderAiPanels(root);
 }

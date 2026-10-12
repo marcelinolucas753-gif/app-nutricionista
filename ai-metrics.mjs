@@ -109,3 +109,83 @@ export async function recentFeedback(professionalId, limit = 120) {
     return result.rows;
   } catch { return []; }
 }
+
+// ---- Revisión de opiniones (pantalla «Ajustes de la IA») ----
+
+/** Opiniones propias, de la más nueva a la más vieja (la base solo devuelve las de la cuenta). */
+export async function listFeedback(professionalId, limit = 200) {
+  const { withProfessional } = await import("./db.mjs");
+  const result = await withProfessional(professionalId, client => client.query(
+    `SELECT id, scope, meal_key, rating, reasons, meal_text, patient_ref, created_at FROM ai_feedback
+     WHERE professional_id = $1 ORDER BY created_at DESC, id DESC LIMIT $2`, [professionalId, Math.min(Math.max(Number(limit) || 200, 1), 500)]));
+  return result.rows.map(row => ({ ...row, id: String(row.id) }));
+}
+
+/** Números de opinión válidos: solo dígitos (en la base son enteros grandes). */
+export function parseFeedbackId(raw) { return /^\d{1,15}$/.test(String(raw ?? "")) ? String(raw) : null; }
+
+export async function deleteFeedback(professionalId, id) {
+  const { withProfessional } = await import("./db.mjs");
+  const result = await withProfessional(professionalId, client => client.query("DELETE FROM ai_feedback WHERE professional_id = $1 AND id = $2", [professionalId, id]));
+  return result.rowCount;
+}
+
+export async function deleteAllFeedback(professionalId) {
+  const { withProfessional } = await import("./db.mjs");
+  const result = await withProfessional(professionalId, client => client.query("DELETE FROM ai_feedback WHERE professional_id = $1", [professionalId]));
+  return result.rowCount;
+}
+
+// ---- Panel de uso y costo de la IA ----
+
+export const AI_KIND_LABELS = {
+  ai_weekly_menu: "Menú semanal", ai_meal_replacement: "Reemplazo de una comida", ai_recipe: "Receta", ai_substitution_ideas: "Sustituciones",
+  ai_shopping_list: "Lista de compras", ai_consultation_summary: "Resumen de consultas"
+};
+export const USAGE_PERIODS = [7, 30, 90];
+
+/** Cantidad de días del período pedido; si no es uno de los permitidos, 30. */
+export function parseUsageDays(raw) { const days = Number(raw); return USAGE_PERIODS.includes(days) ? days : 30; }
+
+/**
+ * Tarifas en dólares por millón de tokens. Solo existen si quien administra el servidor las cargó
+ * (OPENAI_PRICE_INPUT_PER_MILLION y OPENAI_PRICE_OUTPUT_PER_MILLION): la app no inventa precios.
+ */
+export function usagePrices(env = process.env) {
+  const read = value => (value === undefined || String(value).trim() === "" ? NaN : Number(value));
+  const input = read(env.OPENAI_PRICE_INPUT_PER_MILLION), output = read(env.OPENAI_PRICE_OUTPUT_PER_MILLION);
+  return Number.isFinite(input) && input >= 0 && Number.isFinite(output) && output >= 0 ? { input, output } : null;
+}
+
+/** Convierte lo que devuelve la base (los conteos llegan como texto) en el resumen que ve la profesional. */
+export function summarizeUsage(kindRows = [], errorRows = [], { days = 30, prices = null } = {}) {
+  const count = value => Number(value) || 0;
+  const byKind = kindRows.map(row => ({
+    kind: row.kind, label: AI_KIND_LABELS[row.kind] || row.kind, requests: count(row.requests), errors: count(row.errors), retries: count(row.retries),
+    avgSeconds: Math.round(count(row.avg_ms) / 100) / 10, inputTokens: count(row.input_tokens), outputTokens: count(row.output_tokens)
+  }));
+  const requests = byKind.reduce((sum, row) => sum + row.requests, 0);
+  const inputTokens = byKind.reduce((sum, row) => sum + row.inputTokens, 0), outputTokens = byKind.reduce((sum, row) => sum + row.outputTokens, 0);
+  const totals = {
+    requests, errors: byKind.reduce((sum, row) => sum + row.errors, 0), retries: byKind.reduce((sum, row) => sum + row.retries, 0), inputTokens, outputTokens,
+    avgSeconds: requests ? Math.round(byKind.reduce((sum, row) => sum + row.avgSeconds * row.requests, 0) / requests * 10) / 10 : 0
+  };
+  const costUsd = prices ? Math.round((inputTokens / 1e6 * prices.input + outputTokens / 1e6 * prices.output) * 100) / 100 : null;
+  const recentErrors = errorRows.map(row => ({ label: AI_KIND_LABELS[row.kind] || row.kind, status: row.error_status ?? null, message: row.error_message || "Error", at: row.created_at }));
+  return { days, byKind, totals, costUsd, recentErrors, pricesConfigured: Boolean(prices) };
+}
+
+export async function loadUsage(professionalId, days = 30) {
+  const period = parseUsageDays(days);
+  const { withProfessional } = await import("./db.mjs");
+  const [kinds, errors] = await withProfessional(professionalId, async client => [
+    await client.query(
+      `SELECT kind, count(*) AS requests, count(*) FILTER (WHERE outcome = 'error') AS errors, count(*) FILTER (WHERE calls > 1) AS retries,
+              COALESCE(round(avg(latency_ms)), 0) AS avg_ms, COALESCE(sum(input_tokens), 0) AS input_tokens, COALESCE(sum(output_tokens), 0) AS output_tokens
+       FROM ai_events WHERE professional_id = $1 AND created_at > now() - make_interval(days => $2::int) GROUP BY kind ORDER BY requests DESC`, [professionalId, period]),
+    await client.query(
+      `SELECT kind, error_status, error_message, created_at FROM ai_events
+       WHERE professional_id = $1 AND outcome = 'error' AND created_at > now() - make_interval(days => $2::int) ORDER BY created_at DESC LIMIT 5`, [professionalId, period])
+  ]);
+  return summarizeUsage(kinds.rows, errors.rows, { days: period, prices: usagePrices() });
+}

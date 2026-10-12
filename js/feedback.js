@@ -1,7 +1,7 @@
 import { api, escapeHTML } from "./util.js";
 
 // Los mismos códigos que FEEDBACK_REASONS en ai-metrics.mjs (el servidor descarta cualquier otro).
-const REASONS = [
+export const REASONS = [
   ["no_realista", "Poco realista"], ["muy_caro", "Muy caro"], ["muy_elaborado", "Muy elaborado"],
   ["no_es_de_la_zona", "No es de la zona"], ["porcion", "Porción"], ["se_repite", "Se repite"], ["otro", "Otro"]
 ];

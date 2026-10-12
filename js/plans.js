@@ -100,11 +100,28 @@ export function plansHTML(person, visible) {
   const banner = requirements ? `Objetivo energético para el borrador: ${requirements.dailyEnergyKcal} kcal/día; distribución interna 60% carbohidratos, 25% grasas y 15% proteínas. Tamaño de porción orientativo para las comidas principales: ${TIER_LABEL[guidance?.overallTier] || "moderado"}.` : "No hay una estimación disponible: pueden faltar datos o el contexto requiere evitar este cálculo. El borrador se generará sin ese ajuste.";
   const conflicts = hasDraft(person) ? analyzeDraft(person, person.draft) : [];
   const versions = (person.planVersions || []).map((item, index, all) => `<details class="history-card"><summary><strong>Versión ${all.length - index} · ${formatDateTime(item.savedAt)}</strong></summary><p>${escapeHTML(item.draft?.intro || "Borrador anterior")}</p><button type="button" class="button button-quiet" data-restore-plan="${index}">Restaurar como borrador</button></details>`).join("");
-  return `<section id="plans-panel" data-patient="${escapeHTML(person.id)}" class="detail-panel ${visible ? "" : "hidden"}"><div class="form-card"><h2>Planes y borradores</h2><p class="energy-banner">${escapeHTML(banner)}</p><form id="energy-adjust-form" class="record-form energy-adjust-form"><label>Ajuste profesional del objetivo energético (kcal/día)<input name="adjustment" type="number" min="-2000" max="2000" step="50" value="${Number(person.energyAdjustmentKcal) || 0}"/><small>Se aplica al gasto estimado en los nuevos borradores.</small></label><button class="button button-quiet" type="submit">Guardar ajuste</button></form><button type="button" class="button button-primary no-print" id="generate-menu">${hasDraft(person) ? "Generar nuevo borrador" : "✳ Generar menú semanal"}</button> <span id="generate-status" class="metric-caption"></span>${hasDraft(person) ? `${safetyPanel(person, conflicts)}<div class="draft-banner">Borrador para revisar antes de compartir. No es una indicación clínica aprobada.</div><div id="draft-content">${draftHTML(person, conflicts)}</div>${recipesHTML(person)}<div class="detail-actions no-print"><button type="button" class="button button-quiet" id="save-draft">Guardar cambios y revisar de nuevo</button>${person.approvedAt ? `<span class="approval-label">Aprobado para compartir</span><button type="button" class="button button-primary" id="print-menu">Imprimir o guardar como PDF</button>` : `<button type="button" class="button button-primary" id="approve-plan">Aprobar y preparar para enviar</button>`}</div>` : `<div class="empty-state">Todavía no hay un plan. Generalo con IA o partí de una plantilla. La generación requiere autorización registrada de la persona.</div>`}</div>${templatesHTML(person)}${shoppingHTML(person)}<section class="plan-history no-print"><h3>Versiones anteriores</h3><div class="history-list">${versions || `<div class="recent-empty">Los borradores previos aparecerán acá cuando generes uno nuevo.</div>`}</div></section><div id="print-plan" class="print-only"></div></section>`;
+  return `<section id="plans-panel" data-patient="${escapeHTML(person.id)}" class="detail-panel ${visible ? "" : "hidden"}"><div class="form-card"><h2>Planes y borradores</h2><p class="energy-banner">${escapeHTML(banner)}</p><form id="energy-adjust-form" class="record-form energy-adjust-form"><label>Ajuste profesional del objetivo energético (kcal/día)<input name="adjustment" type="number" min="-2000" max="2000" step="50" value="${Number(person.energyAdjustmentKcal) || 0}"/><small>Se aplica al gasto estimado en los nuevos borradores.</small></label><button class="button button-quiet" type="submit">Guardar ajuste</button></form><button type="button" class="button button-primary no-print" id="generate-menu">${hasDraft(person) ? "Generar nuevo borrador" : "✳ Generar menú semanal"}</button> <span id="generate-status" class="metric-caption" aria-live="polite"></span>${hasDraft(person) ? `${safetyPanel(person, conflicts)}<div class="draft-banner">Borrador para revisar antes de compartir. No es una indicación clínica aprobada.</div><div id="draft-content">${draftHTML(person, conflicts)}</div>${recipesHTML(person)}<div class="detail-actions no-print"><button type="button" class="button button-quiet" id="save-draft">Guardar cambios y revisar de nuevo</button>${person.approvedAt ? `<span class="approval-label">Aprobado para compartir</span><button type="button" class="button button-primary" id="print-menu">Imprimir o guardar como PDF</button>` : `<button type="button" class="button button-primary" id="approve-plan">Aprobar y preparar para enviar</button>`}</div>` : `<div class="empty-state">Todavía no hay un plan. Generalo con IA o partí de una plantilla. La generación requiere autorización registrada de la persona.</div>`}</div>${templatesHTML(person)}${shoppingHTML(person)}<section class="plan-history no-print"><h3>Versiones anteriores</h3><div class="history-list">${versions || `<div class="recent-empty">Los borradores previos aparecerán acá cuando generes uno nuevo.</div>`}</div></section><div id="print-plan" class="print-only"></div></section>`;
 }
 
 // ---------- Acciones ----------
 async function aiCall(path, body) { return api(`/api/ai/${path}`, { method: "POST", body }); }
+
+/** Contador de segundos y mensajes honestos mientras la IA trabaja (no hay avance real que mostrar: es un solo pedido). Devuelve la función que lo detiene. */
+function trackProgress(button, status) {
+  const started = Date.now();
+  const stages = ["Armando los siete días con las preferencias de la ficha y tus reglas…", "Sigue trabajando: es un menú completo de siete días con seis comidas por día.", "Está tardando más de lo habitual. Si la IA tiene que corregir algo (por ejemplo alergias o comidas repetidas) hace un segundo intento."];
+  const stageAt = [0, 15, 40];
+  let shown = -1;
+  const tick = () => {
+    const seconds = Math.floor((Date.now() - started) / 1000);
+    button.innerHTML = `<span class="spinner"></span> Preparando borrador… ${seconds} s`;
+    const stage = stageAt.filter(from => seconds >= from).length - 1;
+    if (stage !== shown) { shown = stage; status.textContent = stages[stage]; }
+  };
+  tick();
+  const timer = setInterval(tick, 1000);
+  return () => clearInterval(timer);
+}
 
 async function generateMenu(person, rerender) {
   if (!person.consentedAt || person.consentVersion !== 3) { toast("Falta registrar la autorización de la persona para usar IA."); return; }
@@ -113,8 +130,8 @@ async function generateMenu(person, rerender) {
     person.noAllergiesConfirmedAt = Date.now(); logHistory(person, "Se confirmó que no hay alergias declaradas"); queueSave();
   }
   const button = $("generate-menu"), status = $("generate-status");
-  button.disabled = true; button.innerHTML = '<span class="spinner"></span> Preparando borrador…';
-  status.textContent = "Conectando con la IA. Puede tardar un momento."; status.classList.remove("text-danger");
+  button.disabled = true; status.classList.remove("text-danger");
+  const stopProgress = trackProgress(button, status);
   try {
     captureDraftEdits(person);
     if (!(await ensureSaved())) throw new Error("No se pudo guardar la ficha antes de generar. Probá de nuevo.");
@@ -125,9 +142,10 @@ async function generateMenu(person, rerender) {
     replaceDraft(person, payload, "Menú semanal generado con IA");
     rerender(); toast("Borrador creado. Revisalo antes de compartirlo.");
   } catch (error) {
+    stopProgress();
     status.textContent = error.message; status.classList.add("text-danger");
     button.disabled = false; button.innerHTML = "↻ Intentar de nuevo";
-  }
+  } finally { stopProgress(); }
 }
 
 /** «Reemplazar comida»: muestra botones rápidos (y un texto opcional) antes de consultar a la IA. */

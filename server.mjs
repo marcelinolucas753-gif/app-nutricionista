@@ -8,7 +8,7 @@ import { pool, withProfessional, writeAudit } from "./db.mjs";
 import { createEncryptedBackup, validateBackupKey, backupStatus } from "./backup.mjs";
 import { fail, portalDraftView, validatedDocument, validatePortalNote, validatePortalWeight } from "./validation.mjs";
 import { CONTENT_TYPES, clientIp as requestIp, resolvePublicFile, sameOriginOk } from "./security.mjs";
-import { measureAi, recentFeedback, saveFeedback, validateFeedback } from "./ai-metrics.mjs";
+import { deleteAllFeedback, deleteFeedback, listFeedback, loadUsage, measureAi, parseFeedbackId, parseUsageDays, recentFeedback, saveFeedback, validateFeedback } from "./ai-metrics.mjs";
 import { buildLearning } from "./learning.mjs";
 import { createRecipe, generateShoppingList, generateWeeklyMenu, regenerateMeal, suggestSubstitutions, summarizeConsultations } from "./ai.mjs";
 
@@ -43,7 +43,8 @@ function recordFailure(key, windowMs) {
 const PORTAL_WINDOW_MS = 15 * 60 * 1000;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const DUMMY_SALT = "0".repeat(32);
-const PORTAL_SESSION_DAYS = 30;
+const PORTAL_SESSION_DAYS = 30; // tope absoluto: pasado este plazo hay que volver a ingresar aunque se use todos los días
+const PORTAL_IDLE_DAYS = 14;    // la sesión se cierra sola si pasan tantos días sin usarla; cada uso la renueva hasta el tope
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sin I, O, 0 ni 1 para evitar confusiones al dictarlo
 
 function digest(token) { return createHash("sha256").update(token).digest("hex"); }
@@ -108,6 +109,8 @@ async function portalSessionFor(req) {
 async function requirePortalSession(req) {
   const access = await portalSessionFor(req);
   if (!access) throw fail("Tu sesión venció o el acceso fue revocado. Ingresá de nuevo con tu código.", 401);
+  // Cada uso renueva el plazo de inactividad, sin pasar nunca del tope absoluto. Se evita escribir en cada pedido.
+  await pool.query(`UPDATE patient_sessions SET expires_at = LEAST(created_at + interval '${PORTAL_SESSION_DAYS} days', now() + interval '${PORTAL_IDLE_DAYS} days') WHERE token_hash=$1 AND expires_at < LEAST(created_at + interval '${PORTAL_SESSION_DAYS} days', now() + interval '${PORTAL_IDLE_DAYS} days') - interval '1 day'`, [access.tokenHash]).catch(() => {});
   return access;
 }
 
@@ -260,6 +263,32 @@ async function handle(req, res) {
     catch (error) { json(res, error.status || 500, { error: error.status ? error.message : "No se pudo guardar tu opinión." }); }
     return;
   }
+  // Revisión de las opiniones 👍/👎 y panel de uso de la IA (pantalla «Ajustes de la IA»).
+  if (pathname === "/api/feedback" && req.method === "GET") {
+    const user = await requireSession(req, res); if (!user) return;
+    try { json(res, 200, { items: await listFeedback(user.id) }); }
+    catch { json(res, 500, { error: "No se pudieron cargar tus opiniones." }); }
+    return;
+  }
+  if (pathname.startsWith("/api/feedback/") && req.method === "DELETE") {
+    const user = await requireSession(req, res); if (!user) return;
+    try {
+      const target = pathname.slice("/api/feedback/".length);
+      if (target === "all") { const removed = await deleteAllFeedback(user.id); await writeAudit(user.id, "ai_feedback_clear", "success").catch(() => {}); json(res, 200, { ok: true, removed }); return; }
+      const id = parseFeedbackId(target);
+      if (!id) throw fail("No encontramos esa opinión.", 404);
+      const removed = await deleteFeedback(user.id, id);
+      if (!removed) throw fail("No encontramos esa opinión.", 404);
+      json(res, 200, { ok: true, removed });
+    } catch (error) { json(res, error.status || 500, { error: error.status ? error.message : "No se pudo borrar la opinión." }); }
+    return;
+  }
+  if (pathname === "/api/usage" && req.method === "GET") {
+    const user = await requireSession(req, res); if (!user) return;
+    try { json(res, 200, await loadUsage(user.id, parseUsageDays(new URL(req.url, "http://localhost").searchParams.get("days")))); }
+    catch { json(res, 500, { error: "No se pudo cargar el uso de la IA." }); }
+    return;
+  }
   if (pathname.startsWith("/api/ai/") && req.method === "POST") {
     const user = await requireSession(req, res); if (!user) return;
     if (!rateAllowed(`ai:${user.id}`, 60, 60 * 60 * 1000)) { json(res, 429, { error: "Se alcanzó el límite temporal de asistencia. Volvé a intentar más tarde." }); return; }
@@ -349,7 +378,7 @@ async function handle(req, res) {
       }
       const session = randomBytes(32).toString("base64url");
       await pool.query("DELETE FROM patient_sessions WHERE expires_at<=now()");
-      await pool.query(`INSERT INTO patient_sessions (token_hash, access_token_id, expires_at) VALUES ($1,$2,now() + interval '${PORTAL_SESSION_DAYS} days')`, [digest(session), access.id]);
+      await pool.query(`INSERT INTO patient_sessions (token_hash, access_token_id, expires_at) VALUES ($1,$2,now() + interval '${PORTAL_IDLE_DAYS} days')`, [digest(session), access.id]);
       await pool.query("UPDATE patient_access_tokens SET last_used_at=now() WHERE id=$1", [access.id]);
       json(res, 200, { ok: true, token: session });
     } catch (error) { json(res, error.status || 500, { error: error.status ? error.message : "No se pudo acceder." }); }
@@ -358,6 +387,16 @@ async function handle(req, res) {
   if (pathname === "/api/portal/logout" && req.method === "POST") {
     try { const access = await portalSessionFor(req); if (access) await pool.query("DELETE FROM patient_sessions WHERE token_hash=$1", [access.tokenHash]); } catch { /* cerrar sesión nunca falla para la persona */ }
     json(res, 200, { ok: true }); return;
+  }
+  // La persona cierra su sesión en TODOS sus dispositivos (por ejemplo si perdió el celular). Su código sigue valiendo.
+  if (pathname === "/api/portal/logout-all" && req.method === "POST") {
+    try {
+      const access = await requirePortalSession(req);
+      const removed = await pool.query("DELETE FROM patient_sessions WHERE access_token_id=$1", [access.accessId]);
+      await writeAudit(access.professionalId, "portal_logout_all", "success").catch(() => {});
+      json(res, 200, { ok: true, closed: removed.rowCount });
+    } catch (error) { json(res, error.status || 500, { error: error.status ? error.message : "No se pudo cerrar las sesiones." }); }
+    return;
   }
   if (pathname === "/api/portal/data" && req.method === "GET") {
     try {

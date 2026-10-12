@@ -21,7 +21,7 @@ Aplicación web en español para que profesionales de nutrición organicen pacie
 - **Lista de compras** semanal armada con IA a partir del menú, visible en el portal cuando el plan está aprobado.
 - **Plantillas de menú** reutilizables.
 - **Historial de cambios** por ficha (últimos 300 movimientos).
-- **Portal del paciente**: el enlace se canjea por una sesión de 30 días y se borra de la barra de direcciones; los pesos enviados quedan pendientes hasta que la profesional los acepta o descarta.
+- **Portal del paciente**: el enlace se canjea por una sesión que se cierra sola tras 14 días sin usarla (y como máximo a los 30 días), se borra de la barra de direcciones y la persona puede cerrarla en todos sus dispositivos desde el propio portal; los pesos enviados quedan pendientes hasta que la profesional los acepta o descarta.
 - **Cambio de contraseña** en una ventana propia (ya no con cuadros de texto del navegador).
 - **Aviso de respaldos** en el inicio si no están activos o están desactualizados.
 - Si dos dispositivos guardan a la vez, ya no se pierde el último cambio: se descarga una copia antes de cargar la versión más reciente.
@@ -99,7 +99,7 @@ Primero debe publicarse en una dirección HTTPS. Android: abrí el enlace en Chr
 - `node --env-file=.env manage-users.mjs create correo@ejemplo.com "Nombre"`: crea un profesional.
 - `node --env-file=.env manage-users.mjs reset-password correo@ejemplo.com`: restablece una contraseña y cierra sus sesiones activas.
 - `node --env-file=.env restore-backup.mjs ruta/al/respaldo.enc`: restaura un respaldo cifrado previa confirmación.
-- `npm test`: corre las pruebas automáticas (alergias, validaciones, gráficos, contacto, lógica de la ficha).
+- `npm test`: corre las pruebas automáticas (alergias, validaciones, gráficos, contacto, lógica de la ficha). Las pruebas de las rutas del servidor necesitan una base PostgreSQL **de prueba** y se activan con `TEST_DATABASE_ADMIN_URL` (conexión de administrador a esa base, nunca la real); sin esa variable se omiten. En GitHub corren solas en cada cambio (ver `.github/workflows/tests.yml`).
 - `GET /api/health`: informa si la base está disponible, sin exponer información de las fichas.
 - Las consultas y guardados deben seguir usando HTTPS y no registrar los cuerpos de solicitudes, que pueden contener datos de salud.
 
@@ -110,3 +110,8 @@ Primero debe publicarse en una dirección HTTPS. Android: abrí el enlace en Chr
 ## Ajustes de la IA
 
 En la app, «Ajustes de la IA» permite corregir las listas de alimentos habituales y no permitidos y agregar reglas propias. Se guardan en la cuenta de cada profesional.
+
+Más abajo, en la misma pantalla de Ajustes:
+
+- **Opiniones sobre la IA**: lista los 👍/👎 que dejaste, con el motivo, para revisarlos y borrar los que ya no representen lo que querés (uno por uno o todos). Lo que borrás deja de influir en las próximas propuestas.
+- **Uso de la IA**: cuántas veces se usó cada función en los últimos días, cuántas fallaron y, si cargás `OPENAI_PRICE_INPUT_PER_MILLION` y `OPENAI_PRICE_OUTPUT_PER_MILLION`, una estimación del costo. Si definís `OPENAI_MODEL_FAST`, las tareas cortas usan ese modelo más rápido.
