@@ -124,3 +124,16 @@
 
 .portal-security { margin-top: 20px; display: grid; gap: 10px; }
 .portal-security h2 { margin: 0; }
+
+/* Celulares angostos: la barra superior se acomoda en dos renglones en vez de ensanchar toda la página. */
+.main-area { min-width: 0; }
+@media (max-width: 850px) {
+  .topbar { height: auto; min-height: 60px; flex-wrap: wrap; padding: 8px 12px; gap: 6px 8px; }
+  .topbar .breadcrumb { min-width: 0; overflow-wrap: anywhere; }
+  .topbar .button { padding: 6px 10px; font-size: 12px; }
+  .page-title-row { flex-wrap: wrap; gap: 12px; }
+}
+@media (max-width: 640px) {
+  .top-date { display: none; }
+  .page-wrap { padding-left: 16px; padding-right: 16px; }
+}
