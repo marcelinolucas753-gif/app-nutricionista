@@ -46,9 +46,8 @@ const shoppingSchema = {
 
 /** Llama a OpenAI y registra tiempo y tokens para la medición (ai-metrics.mjs). */
 export async function callOpenAI(args) {
-  // Las funciones cortas piden `fast: true`: si el servidor define OPENAI_MODEL_FAST usan ese modelo (más rápido y barato).
-  // Sin esa variable todo sigue usando OPENAI_MODEL, igual que antes. El menú semanal siempre usa el modelo principal.
-  const model = (args.fast && process.env.OPENAI_MODEL_FAST) || process.env.OPENAI_MODEL || "gpt-6-luna";
+  // Todas las funciones de IA usan el mismo modelo (OPENAI_MODEL).
+  const model = process.env.OPENAI_MODEL || "gpt-6-luna";
   let usage;
   try { return await requestOpenAI(args, model, found => { usage = found; }); }
   finally { noteCall({ model, usage }); }
@@ -149,7 +148,7 @@ const SLOT_SHORT = { breakfast: "desayuno", merienda: "merienda" };
 export async function summarizeConsultations(patient) {
   const consultations = [...(patient.consultations || [])].sort((a, b) => String(a.date || "").localeCompare(String(b.date || ""))).slice(-12).map(item => ({ date: item.date, reason: item.reason, notes: item.notes, adherence: item.adherence, recommendations: item.recommendations }));
   if (!consultations.length) throw fail("Esta ficha todavía no tiene consultas registradas.");
-  return callOpenAI({ fast: true, name: "consultation_summary", schema: consultationSchema, instructions: "Resumí las notas de consulta para que un profesional las revise y sugerí preguntas neutrales para el próximo encuentro. No diagnostiques ni infieras hechos que no estén escritos. Si algo no consta, no lo inventes. En español claro y conciso. La respuesta es un borrador interno para revisión.", input: { consultations } });
+  return callOpenAI({ name: "consultation_summary", schema: consultationSchema, instructions: "Resumí las notas de consulta para que un profesional las revise y sugerí preguntas neutrales para el próximo encuentro. No diagnostiques ni infieras hechos que no estén escritos. Si algo no consta, no lo inventes. En español claro y conciso. La respuesta es un borrador interno para revisión.", input: { consultations } });
 }
 
 export async function regenerateMeal(patient, { dayIndex, mealKey, instruction, learning = null, settings = null }) {
@@ -168,7 +167,7 @@ export async function regenerateMeal(patient, { dayIndex, mealKey, instruction, 
   const instructions = `Proponé una sola comida en español rioplatense y medidas caseras. Si input contiene portionGuidance, su campo hint describe, en medidas caseras, el tamaño OBLIGATORIO de esta comida: elegí alimentos reales que encajen en ese tamaño, sin repetir números de kcal ni mencionar calorías. Respetá la comida, las preferencias y restricciones que aparecen en el contexto. ${ALLERGY_RULE} No agregues exclusiones no indicadas. No des gramos, calorías ni porcentajes. Es un borrador que revisará un profesional. No afirmes equivalencia clínica. ${singleMealStyleRule(mealKey)} ${mealKey === "lunch" ? lunchPlaceRule(patient.lunchPlace) : ""} Priorizá alimentos habituales y accesibles de la zona; no uses ingredientes caros o poco comunes. ${singleMealSettingsRule(resolved)} ${routineRule(patient)} ${LEARNING_INSTRUCTION}`;
   let mustFix;
   for (let attempt = 0; attempt < 2; attempt++) {
-    const result = await callOpenAI({ fast: true, name: "replacement_meal", schema: mealSchema, instructions, input: mustFix ? { ...base, mustFix } : base });
+    const result = await callOpenAI({ name: "replacement_meal", schema: mealSchema, instructions, input: mustFix ? { ...base, mustFix } : base });
     if (!result.meal?.trim() || hasExactNutritionAmounts(result.meal)) throw fail("La sugerencia no vino en medidas caseras. No se aplicó; volvé a intentar.", 502);
     result.meal = cleanPlateWording(result.meal);
     const conflicts = analyzeText(patient, result.meal).filter(item => item.severity === "allergy");
@@ -187,7 +186,7 @@ export async function createRecipe(patient, { meal, portions }) {
   const instructions = `Convertí la comida en una receta sencilla para pacientes, con cantidades expresadas solo en medidas caseras (taza, unidad, cucharada, rodaja, plato, etc.), sin gramos ni mililitros. Incluí pasos claros, porciones, tiempo y dificultad. Respeta únicamente las restricciones efectivamente indicadas. ${ALLERGY_RULE} No afirmes equivalencias clínicas ni seguridad ante contaminación cruzada; el profesional revisa el borrador.`;
   let mustFix;
   for (let attempt = 0; attempt < 2; attempt++) {
-    const result = await callOpenAI({ fast: true, name: "household_recipe", schema: recipeSchema, instructions, input: mustFix ? { ...base, mustFix } : base });
+    const result = await callOpenAI({ name: "household_recipe", schema: recipeSchema, instructions, input: mustFix ? { ...base, mustFix } : base });
     if (hasExactNutritionAmounts(JSON.stringify(result))) throw fail("La receta incluyó cantidades que no son medidas caseras. No se guardó; volvé a intentar.", 502);
     const recipeText = [result.name, ...(result.ingredients || []).map(item => `${item.quantity} ${item.measure} ${item.ingredient}`)].join(" | ");
     const conflicts = analyzeText(patient, recipeText).filter(item => item.severity === "allergy");
@@ -202,7 +201,7 @@ export async function suggestSubstitutions(patient, { meal, ingredient }) {
   const base = { meal, ingredient, preferences: patient.likes || "", avoid: patient.avoids || "", allergies: patient.allergies || "", goal: patient.goal || "" };
   const instructions = `Sugiere tres a cinco ideas para reemplazar un ingrediente dentro de una comida. No afirmes que sean nutricional o clínicamente equivalentes; explica en una nota qué debe comprobar el profesional. Usa medidas caseras, respeta preferencias y restricciones registradas, y no agregues exclusiones que no estén indicadas. ${ALLERGY_RULE} Respuesta en español rioplatense.`;
   for (let attempt = 0; attempt < 2; attempt++) {
-    const result = await callOpenAI({ fast: true, name: "meal_substitution_ideas", schema: substitutesSchema, instructions, input: base });
+    const result = await callOpenAI({ name: "meal_substitution_ideas", schema: substitutesSchema, instructions, input: base });
     if (hasExactNutritionAmounts(JSON.stringify(result))) throw fail("La respuesta incluyó cantidades que no son medidas caseras. Volvé a intentarlo.", 502);
     const safe = result.options.filter(option => !analyzeText(patient, `${option.name} | ${option.idea}`).some(item => item.severity === "allergy"));
     if (safe.length) return { ...result, options: safe };
@@ -217,7 +216,7 @@ export async function generateShoppingList(patient, days) {
   if (!Array.isArray(days) || !days.length || days.length > 7) throw fail("No hay un menú semanal para armar la lista.");
   const meals = days.map(day => Object.fromEntries([["day", String(day?.day || "").slice(0, 20)], ...mealKeys.map(key => [key, isFreeMeal(day?.[key]) ? FREE_MEAL_FOR_SHOPPING : String(day?.[key] || "").slice(0, 600)])]));
   const result = await callOpenAI({
-    fast: true, name: "weekly_shopping_list", schema: shoppingSchema,
+    name: "weekly_shopping_list", schema: shoppingSchema,
     instructions: "Armá una lista de compras para UNA persona durante una semana, a partir del menú semanal del input. Agrupá por sección de la compra (verdulería, frutas, carnes y huevos, lácteos, almacén, panadería, etc.). Sumá lo que se repite. Las cantidades son aproximadas, en unidades de compra o medidas caseras (unidades, atados, docena, paquete, lata, frasco, bolsa, bandeja, cabeza, tazas) y SIN gramos, kilos, mililitros, calorías ni porcentajes. Las comidas que dicen «Libre» no llevan compras: no agregues ningún alimento por ellas. No agregues alimentos que no estén en el menú, salvo condimentos básicos (sal, aceite, vinagre) que podés incluir en almacén. En español rioplatense. En reviewNote aclará que son cantidades orientativas que el profesional debe revisar.",
     input: { meals }
   });

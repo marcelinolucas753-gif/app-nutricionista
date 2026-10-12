@@ -114,4 +114,4 @@ En la app, «Ajustes de la IA» permite corregir las listas de alimentos habitua
 Más abajo, en la misma pantalla de Ajustes:
 
 - **Opiniones sobre la IA**: lista los 👍/👎 que dejaste, con el motivo, para revisarlos y borrar los que ya no representen lo que querés (uno por uno o todos). Lo que borrás deja de influir en las próximas propuestas.
-- **Uso de la IA**: cuántas veces se usó cada función en los últimos días, cuántas fallaron y, si cargás `OPENAI_PRICE_INPUT_PER_MILLION` y `OPENAI_PRICE_OUTPUT_PER_MILLION`, una estimación del costo. Si definís `OPENAI_MODEL_FAST`, las tareas cortas usan ese modelo más rápido.
+- **Uso de la IA**: cuántas veces se usó cada función en los últimos días, cuántas fallaron y, si cargás `OPENAI_PRICE_INPUT_PER_MILLION` y `OPENAI_PRICE_OUTPUT_PER_MILLION`, una estimación del costo.

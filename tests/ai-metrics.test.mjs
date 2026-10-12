@@ -137,8 +137,8 @@ test("período de uso y número de opinión: solo valores válidos", () => {
   for (const bad of ["", "abc", "12a", "-1", "1.5", "1; DROP TABLE x", "1".repeat(20), null, undefined]) assert.equal(parseFeedbackId(bad), null, String(bad));
 });
 
-test("las funciones cortas usan OPENAI_MODEL_FAST si existe y el menú semanal siempre el modelo principal", async () => {
-  const original = globalThis.fetch, previous = { main: process.env.OPENAI_MODEL, fast: process.env.OPENAI_MODEL_FAST };
+test("todas las funciones de IA usan el mismo modelo (OPENAI_MODEL)", async () => {
+  const original = globalThis.fetch, previous = { main: process.env.OPENAI_MODEL };
   const used = [];
   process.env.OPENAI_API_KEY = "clave-de-prueba";
   const recipe = { name: "Tortilla de papa", portions: "2 porciones", ingredients: [{ quantity: "2", measure: "unidades", ingredient: "papas" }, { quantity: "1", measure: "pizca", ingredient: "sal" }], steps: ["Pelar las papas.", "Cocinar a fuego bajo."], timeMinutes: 20, difficulty: "Fácil", reviewNote: "Revisar." };
@@ -148,15 +148,12 @@ test("las funciones cortas usan OPENAI_MODEL_FAST si existe y el menú semanal s
   };
   mock.method(console, "log", () => {});
   try {
-    process.env.OPENAI_MODEL = "modelo-principal"; process.env.OPENAI_MODEL_FAST = "modelo-rapido";
+    process.env.OPENAI_MODEL = "modelo-principal"; process.env.OPENAI_MODEL_FAST = "modelo-rapido"; // aunque exista, se ignora
     await createRecipe({ likes: "", avoids: "", allergies: "", goal: "x" }, { meal: "Tortilla de papa", portions: 2 });
     await generateWeeklyMenu({ age: 40, condition: "general", goal: "Ordenar horarios", allergies: "", lunchPlace: "home" });
-    assert.deepEqual(used, ["modelo-rapido", "modelo-principal"]);
-    used.length = 0; delete process.env.OPENAI_MODEL_FAST;
-    await createRecipe({ likes: "", avoids: "", allergies: "", goal: "x" }, { meal: "Tortilla de papa", portions: 2 });
-    assert.deepEqual(used, ["modelo-principal"]); // sin la variable todo sigue como antes
+    assert.deepEqual(used, ["modelo-principal", "modelo-principal"]);
   } finally {
     globalThis.fetch = original; mock.restoreAll();
-    for (const [key, value] of [["OPENAI_MODEL", previous.main], ["OPENAI_MODEL_FAST", previous.fast]]) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
+    for (const [key, value] of [["OPENAI_MODEL", previous.main], ["OPENAI_MODEL_FAST", undefined]]) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
   }
 });
