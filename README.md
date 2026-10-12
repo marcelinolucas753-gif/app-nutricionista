@@ -16,6 +16,8 @@ Aplicación web en español para que profesionales de nutrición organicen pacie
 
 - **Alergias e intolerancias** como campo propio de la ficha. Cada menú, comida, receta y plantilla se revisa contra esas alergias y contra lo que la persona evita; las coincidencias se marcan en rojo. Aprobar un plan con coincidencias exige una confirmación explícita y queda en el historial. La revisión busca palabras: no reemplaza la lectura profesional ni detecta ingredientes ocultos.
 - **Avisos por WhatsApp** (turnos, acceso al portal y lista de compras): la app abre WhatsApp con el mensaje armado; la profesional toca «Enviar». No hay envío automático.
+- **Avisos por hacer** en el inicio: turnos de las próximas 48 horas sin aviso y personas con el control vencido y sin turno agendado, con botón para abrir WhatsApp con el mensaje armado (el envío lo hace la profesional; no hay envío automático, que requeriría el servicio pago de WhatsApp Business).
+- **Informe de evolución** (pestaña Mediciones de la ficha > «Informe de evolución (PDF)»): una hoja para la persona con gráficos y tabla de mediciones, metas visibles y recomendaciones del plan aprobado. Se guarda como PDF desde el diálogo de impresión. Nunca incluye notas de consultas, historial ni alergias.
 - **Gráficos** de peso, cintura y cadera en la ficha y en el portal.
 - **Metas** por persona, con opción de mostrarlas en su portal.
 - **Lista de compras** semanal armada con IA a partir del menú, visible en el portal cuando el plan está aprobado.
@@ -107,9 +109,15 @@ Primero debe publicarse en una dirección HTTPS. Android: abrí el enlace en Chr
 
 `npm run evaluar` (o doble clic en `evaluar-ia.bat` en Windows) genera un menú por cada ficha de ejemplo de `evaluacion/fichas-ejemplo.mjs` con la IA real y revisa: fin de semana libre, desayunos y meriendas simples, sin repetidos, colaciones completas, equipamiento de cocina, alergias y alimentos evitados. Necesita `OPENAI_API_KEY` en `.env`; cada menú es una llamada con costo. El detalle con los menús completos se guarda en `evaluacion/resultados/` (no se sube a GitHub). Opciones: `npm run evaluar -- --veces 3 --menus`.
 
+### Alimentos de estación
+
+`SEASONAL_FOODS` en `menu-rules.mjs` tiene, por estación, las frutas y verduras de la zona que la IA prioriza cuando encajan (sin los que chocan con la ficha). Es un **borrador general** para que lo revises y corrijas; es texto y se edita sin programar. No se incluyen precios: cambian por semana y la app no tiene una fuente confiable de precios de la zona.
+
 ## Ajustes de la IA
 
 En la app, «Ajustes de la IA» permite corregir las listas de alimentos habituales y no permitidos y agregar reglas propias. Se guardan en la cuenta de cada profesional.
+
+- **Mis comidas**: tus propias comidas, una por renglón y por tipo de comida (también se pueden guardar desde un plan con «☆ Guardar en mis comidas»). Al armar un menú o reemplazar una comida, la IA las usa como base antes de inventar; las que chocan con las alergias, los alimentos evitados o la cocina de la persona se descartan. Se guardan en la cuenta y entran en los respaldos.
 
 Más abajo, en la misma pantalla de Ajustes:
 

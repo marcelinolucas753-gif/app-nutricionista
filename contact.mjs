@@ -83,6 +83,17 @@ export function buildReminderMessage({ patientName, start, professionalName }) {
   return lines.join("\n");
 }
 
+/** Mensaje para recordarle a una persona que ya le toca su próximo control. */
+export function buildControlReminderMessage({ patientName, professionalName }) {
+  const name = firstName(patientName);
+  const lines = [
+    `Hola${name ? ` ${name}` : ""}, ya te toca tu próximo control.`,
+    "¿Querés que coordinemos un turno? Decime qué días y horarios te quedan bien."
+  ];
+  if (professionalName) lines.push(`— ${professionalName}`);
+  return lines.join("\n");
+}
+
 export function buildPortalMessage({ patientName, link, code, professionalName }) {
   const name = firstName(patientName);
   const lines = [

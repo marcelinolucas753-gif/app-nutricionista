@@ -33,6 +33,18 @@ export const FOODS_AVOID_BY_DEFAULT = [
   "pistachos, almendras y nueces como base de una comida (solo un puñado chico como colación, si corresponde)"
 ];
 
+/**
+ * Frutas y verduras de estación en la zona (hemisferio sur). BORRADOR general para que la profesional
+ * lo revise y lo corrija: cada estación es una lista de alimentos separados por coma. La IA los prioriza
+ * cuando encajan, sin forzarlos. Los precios no se incluyen: cambian por semana y la app no tiene una fuente confiable.
+ */
+export const SEASONAL_FOODS = {
+  verano: ["tomate", "zapallito", "berenjena", "choclo", "pepino", "morrón", "chaucha", "lechuga", "sandía", "melón", "durazno", "ciruela", "uva", "banana", "mamón"],
+  otoño: ["zapallo", "calabaza", "batata", "zanahoria", "remolacha", "choclo", "brócoli", "manzana", "pera", "uva", "membrillo", "banana", "mandarina"],
+  invierno: ["naranja", "mandarina", "pomelo", "limón", "zanahoria", "remolacha", "acelga", "espinaca", "repollo", "coliflor", "brócoli", "puerro", "zapallo", "batata", "mandioca", "papa", "banana"],
+  primavera: ["frutilla", "naranja", "banana", "arveja", "chaucha", "lechuga", "rúcula", "radicheta", "zapallito", "zanahoria", "remolacha", "tomate", "kiwi"]
+};
+
 /** Cómo deben ser las comidas livianas (desayuno, merienda y colaciones). */
 export const LIGHT_MEAL_STYLE = {
   breakfast: "infusión (mate cocido, té, café con leche o leche) más tostadas o pan con queso, mermelada o dulce; a veces huevos revueltos, yogur o una fruta. Se prepara en menos de 10 minutos. Sin verduras cocidas, sin tortillas, tartas, guisos ni preparaciones al horno.",
@@ -132,6 +144,7 @@ export function menuStyleInstructions(settings = {}) {
     "Prioridad: adherencia y practicidad. Pensá primero qué puede preparar y comer esta persona sin esfuerzo en su rutina.",
     "Sábado y domingo (días 6 y 7): el almuerzo (lunch) y la cena (dinner) son LIBRES. En esos cuatro campos escribí solamente la palabra «Libre»; el sistema agrega la pauta. El desayuno, las colaciones y la merienda de esos días sí se proponen como el resto de la semana.",
     "En recommendations escribí solo 3 recomendaciones PERSONALIZADAS para esta persona (por ejemplo sobre su rutina, sus gustos o dificultades), sin repetir las de baseRecommendations.",
+    ...(settings.mealBank ? [OWN_MEALS_INSTRUCTION] : []),
     ...(settings.extraRules ? [`Reglas propias de la profesional (nunca anulan alergias, alimentos evitados ni el resto de las reglas): ${settings.extraRules}`] : [])
   ].join(" ");
 }
@@ -339,10 +352,52 @@ export function describeMissingEquipment(item) {
   return `${item.day || `Día ${item.dayIndex + 1}`}: «${item.text}» necesita ${KITCHEN_TOOLS[item.tool].label.toLowerCase()}, que la persona no tiene; reemplazalo por una preparación sin ese aparato`;
 }
 
+// --- Alimentos de estación ----------------------------------------------------------------------
+/** Estación del año en el hemisferio sur (diciembre a febrero = verano). */
+export function seasonOf(date = new Date()) {
+  const month = date.getMonth(); // 0 = enero
+  if (month === 11 || month <= 1) return "verano";
+  if (month <= 4) return "otoño";
+  if (month <= 7) return "invierno";
+  return "primavera";
+}
+
+/** Frase para la IA con los alimentos de la estación, sin los que chocan con la ficha. */
+export function seasonalFoodsRule(patient = {}, date = new Date()) {
+  const season = seasonOf(date);
+  const foods = (SEASONAL_FOODS[season] || []).filter(item => !analyzeText(patient, item).length);
+  if (!foods.length) return "";
+  return `Estamos en ${season}: priorizá frutas y verduras de estación en la zona cuando encajen con la persona y las reglas anteriores (${foods.join(", ")}). No las fuerces ni dejes de lado lo que la persona prefiere; sirven para que el menú sea más fresco y accesible.`;
+}
+
 // --- Ajustes propios de la profesional (se editan desde la app) -----------------------------------
 export const MAX_SETTING_LINES = 40;
 export const MAX_SETTING_LINE_LENGTH = 200;
 export const MAX_EXTRA_RULES = 800;
+
+export const MAX_BANK_MEALS_PER_SLOT = 30;
+export const MAX_BANK_MEAL_LENGTH = 250;
+const BANK_SLOT_KEYS = MEAL_SLOTS.map(([key]) => key);
+
+/** Banco de comidas propias: { breakfast: ["…"], lunch: ["…"] }. Solo tipos de comida válidos, textos cortos y sin repetidos. */
+export function cleanMealBank(raw) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const bank = {};
+  for (const key of BANK_SLOT_KEYS) {
+    if (!Object.hasOwn(raw, key) || !Array.isArray(raw[key])) continue;
+    const seen = new Set(), lines = [];
+    for (const item of raw[key]) {
+      if (typeof item !== "string") continue;
+      const text = item.replace(/\s+/g, " ").trim().slice(0, MAX_BANK_MEAL_LENGTH);
+      const id = normalizeText(text);
+      if (!text || seen.has(id) || isFreeMeal(text)) continue;
+      seen.add(id); lines.push(text);
+      if (lines.length >= MAX_BANK_MEALS_PER_SLOT) break;
+    }
+    if (lines.length) bank[key] = lines;
+  }
+  return Object.keys(bank).length ? bank : null;
+}
 
 /** Limpia los ajustes que llegan del navegador: listas de texto cortas y sin repetidos. */
 export function cleanAiSettings(raw) {
@@ -352,7 +407,7 @@ export function cleanAiSettings(raw) {
     return lines.length ? lines : null;
   };
   const extraRules = typeof raw?.extraRules === "string" ? raw.extraRules.replace(/\s+/g, " ").trim().slice(0, MAX_EXTRA_RULES) : "";
-  return { foodsCommon: clean(raw?.foodsCommon), foodsAvoid: clean(raw?.foodsAvoid), extraRules };
+  return { foodsCommon: clean(raw?.foodsCommon), foodsAvoid: clean(raw?.foodsAvoid), extraRules, mealBank: cleanMealBank(raw?.mealBank) };
 }
 
 /**
@@ -364,11 +419,43 @@ export function resolveMenuSettings(settings, patient = {}) {
   const foodsCommon = (custom.foodsCommon || FOODS_COMMON)
     .map(line => line.split(",").map(item => item.trim()).filter(item => item && !analyzeText(patient, item).length).join(", "))
     .filter(Boolean);
-  return { foodsCommon, foodsAvoid: custom.foodsAvoid || FOODS_AVOID_BY_DEFAULT, extraRules: custom.extraRules };
+  return { foodsCommon, foodsAvoid: custom.foodsAvoid || FOODS_AVOID_BY_DEFAULT, extraRules: custom.extraRules, mealBank: usableMealBank(custom.mealBank, patient) };
 }
+
+/**
+ * Del banco de comidas propias, solo lo que sirve para ESTA persona: sin lo que choca con sus alergias o
+ * alimentos evitados y sin lo que pide un aparato de cocina que no tiene.
+ */
+export function usableMealBank(bank, patient = {}) {
+  const clean = cleanMealBank(bank);
+  if (!clean) return null;
+  const usable = {};
+  for (const [slot, meals] of Object.entries(clean)) {
+    const ok = meals.filter(text => !analyzeText(patient, text).length && !findMissingEquipment({ days: [{ [slot]: text }] }, patient).length);
+    if (ok.length) usable[slot] = ok;
+  }
+  return Object.keys(usable).length ? usable : null;
+}
+
+export const MAX_OWN_MEALS_SHOWN = 8; // por tipo de comida; si hay más, se elige una muestra distinta cada vez
+
+/** Muestra del banco que se le muestra a la IA: { breakfast: [...], lunch: [...] }. `slots` limita los tipos de comida. */
+export function ownMealsFor(bank, slots = BANK_SLOT_KEYS, random = Math.random) {
+  if (!bank) return null;
+  const result = {};
+  for (const slot of slots) {
+    const meals = [...(bank[slot] || [])];
+    for (let i = meals.length - 1; i > 0; i--) { const j = Math.floor(random() * (i + 1)); [meals[i], meals[j]] = [meals[j], meals[i]]; }
+    if (meals.length) result[slot] = meals.slice(0, MAX_OWN_MEALS_SHOWN);
+  }
+  return Object.keys(result).length ? result : null;
+}
+
+/** Frase que se agrega a las instrucciones de la IA cuando la profesional cargó comidas propias. */
+export const OWN_MEALS_INSTRUCTION = "Si input contiene ownMeals, son comidas propias de la profesional, ya revisadas y pensadas para esta persona, agrupadas por tipo de comida. Usalas como BASE preferida: elegí de ahí cuando encajen con la persona y su rutina, tal cual o con pequeños ajustes de porción, y completá con propuestas tuyas solo lo que falte. No repitas la misma comida más veces de lo permitido y mantené las demás reglas de estilo. Nunca anulan alergias, alimentos evitados ni el resto de las reglas.";
 
 /** Versión corta de los ajustes para reemplazar una sola comida. */
 export function singleMealSettingsRule(settings = {}) {
   const avoid = settings.foodsAvoid || FOODS_AVOID_BY_DEFAULT;
-  return `No uses alimentos caros, difíciles de conseguir o poco habituales en la zona: ${avoid.join("; ")}.${settings.extraRules ? ` Reglas propias de la profesional (nunca anulan alergias ni alimentos evitados): ${settings.extraRules}` : ""}`;
+  return `No uses alimentos caros, difíciles de conseguir o poco habituales en la zona: ${avoid.join("; ")}.${settings.extraRules ? ` Reglas propias de la profesional (nunca anulan alergias ni alimentos evitados): ${settings.extraRules}` : ""}${settings.mealBank ? ` ${OWN_MEALS_INSTRUCTION} La propuesta tiene que ser distinta de currentMeal.` : ""}`;
 }

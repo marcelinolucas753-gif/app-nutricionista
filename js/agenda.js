@@ -1,8 +1,8 @@
-import { $, CLOSED_STATUSES, appointmentStatusName, escapeHTML, openExternal, patientName, toast, todayISO } from "./util.js";
-import { uid } from "./logic.js";
+import { $, CLOSED_STATUSES, appointmentStatusName, escapeHTML, formatDate, openExternal, patientName, toast, todayISO } from "./util.js";
+import { appointmentsNeedingReminder, overdueControls, uid } from "./logic.js";
 import { S, activePatients, findPatient, queueSave } from "./state.js";
 import { nav, setPage } from "./nav.js";
-import { buildReminderMessage, whatsappLink } from "../contact.mjs";
+import { buildControlReminderMessage, buildReminderMessage, whatsappLink } from "../contact.mjs";
 
 const when = value => new Date(value);
 const isOpen = item => !CLOSED_STATUSES.includes(item.status);
@@ -21,6 +21,33 @@ export function sendReminder(appointmentId) {
   toast("Se abrió WhatsApp con el mensaje armado. Falta que toques «Enviar» allá.");
 }
 
+/** Abre WhatsApp con el recordatorio de control vencido y anota que se avisó (para esa fecha de control). */
+export function sendControlReminder(patientId, due) {
+  const person = findPatient(patientId);
+  if (!person) return;
+  const link = whatsappLink(person.phone, buildControlReminderMessage({ patientName: person.name, professionalName: S.professional?.name }));
+  if (!link) { toast("Esta ficha no tiene un celular válido. Cargalo en «Editar ficha» para poder avisar por WhatsApp."); return; }
+  if (!openExternal(link)) { toast("El navegador bloqueó la ventana de WhatsApp. Permití ventanas emergentes e intentá de nuevo."); return; }
+  person.controlReminder = { due, at: Date.now() };
+  queueSave(); renderHomeReminders();
+  toast("Se abrió WhatsApp con el mensaje armado. Falta que toques «Enviar» allá.");
+}
+
+const shortDate = value => new Date(value).toLocaleDateString("es-AR", { day: "numeric", month: "short" });
+
+/** «Avisos por hacer»: turnos de las próximas 48 h sin aviso y controles vencidos sin turno. */
+export function renderHomeReminders() {
+  const target = $("home-reminders"); if (!target) return;
+  const appointments = appointmentsNeedingReminder(S.appointments).map(item => ({ item, person: findPatient(item.patientId) })).filter(row => row.person);
+  const controls = overdueControls(activePatients(), S.appointments, todayISO());
+  const rows = [
+    ...appointments.map(({ item, person }) => `<article class="appointment-row"><div class="appointment-time"><strong>${when(item.start).toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" })}</strong><span>${when(item.start).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}</span></div><div class="appointment-info"><strong>${escapeHTML(patientName(person))}</strong><small>Turno sin aviso</small></div><div class="appointment-actions"><button class="button button-quiet" data-remind="${escapeHTML(item.id)}">Avisar por WhatsApp</button></div></article>`),
+    ...controls.map(({ person, due, reminderSentAt }) => `<article class="appointment-row"><div class="appointment-time"><strong>${escapeHTML(formatDate(due))}</strong><span>Control vencido</span></div><div class="appointment-info"><strong>${escapeHTML(patientName(person))}</strong><small>${reminderSentAt ? `Aviso enviado el ${escapeHTML(shortDate(reminderSentAt))}` : "Sin turno agendado"}</small></div><div class="appointment-actions"><button class="button button-quiet" data-remind-control="${escapeHTML(person.id)}" data-due="${escapeHTML(due)}">${reminderSentAt ? "Reenviar aviso" : "Recordar control"}</button><button class="button button-quiet" data-appointment-patient="${escapeHTML(person.id)}">Abrir ficha</button></div></article>`)
+  ];
+  target.innerHTML = rows.length ? rows.join("") : `<div class="recent-empty">Todo al día: no hay avisos pendientes.</div>`;
+  bindRowButtons(target);
+}
+
 function reminderButton(item, person) {
   if (!person || !isOpen(item) || when(item.start).getTime() < Date.now()) return "";
   const sent = item.reminderSentAt ? `Aviso enviado el ${new Date(item.reminderSentAt).toLocaleDateString("es-AR", { day: "numeric", month: "short" })}` : "";
@@ -35,11 +62,13 @@ export function renderHomeAppointments() {
     return `<article class="appointment-row"><div class="appointment-time"><strong>${when(item.start).toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" })}</strong><span>${when(item.start).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}</span></div><div class="appointment-info"><strong>${escapeHTML(person ? patientName(person) : "Paciente eliminado")}</strong><small>${escapeHTML(item.reason || "Control")} · ${escapeHTML(appointmentStatusName(item.status))}</small></div><div class="appointment-actions">${reminderButton(item, person)}${person ? `<button class="button button-quiet" data-appointment-patient="${escapeHTML(person.id)}">Abrir ficha</button>` : ""}</div></article>`;
   }).join("") : `<div class="recent-empty">No hay turnos próximos. Podés agendar uno desde Agenda.</div>`;
   bindRowButtons(target);
+  renderHomeReminders();
 }
 
 function bindRowButtons(target) {
   target.querySelectorAll("[data-appointment-patient]").forEach(button => button.addEventListener("click", () => nav.openPatient(button.dataset.appointmentPatient)));
   target.querySelectorAll("[data-remind]").forEach(button => button.addEventListener("click", () => sendReminder(button.dataset.remind)));
+  target.querySelectorAll("[data-remind-control]").forEach(button => button.addEventListener("click", () => sendControlReminder(button.dataset.remindControl, button.dataset.due)));
 }
 
 function range() {

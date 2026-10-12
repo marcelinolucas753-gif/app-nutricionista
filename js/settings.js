@@ -1,6 +1,7 @@
 import { $, escapeHTML, toast } from "./util.js";
 import { S, queueSave } from "./state.js";
-import { FOODS_AVOID_BY_DEFAULT, FOODS_COMMON, MAX_EXTRA_RULES } from "../menu-rules.mjs";
+import { FOODS_AVOID_BY_DEFAULT, FOODS_COMMON, MAX_BANK_MEALS_PER_SLOT, MAX_BANK_MEAL_LENGTH, MAX_EXTRA_RULES, cleanMealBank } from "../menu-rules.mjs";
+import { MEAL_SLOTS } from "../safety.mjs";
 import { renderAiPanels } from "./ai-review.js";
 
 /** Pantalla «Ajustes de la IA»: la profesional corrige las listas que usa la IA, sin tocar código. */
@@ -25,6 +26,7 @@ export function renderSettings() {
     const form = event.currentTarget;
     const nextCommon = lines(form.elements.foodsCommon.value), nextAvoid = lines(form.elements.foodsAvoid.value);
     S.aiSettings = {
+      ...S.aiSettings,
       foodsCommon: !nextCommon.length || sameList(nextCommon, FOODS_COMMON) ? null : nextCommon,
       foodsAvoid: !nextAvoid.length || sameList(nextAvoid, FOODS_AVOID_BY_DEFAULT) ? null : nextAvoid,
       extraRules: form.elements.extraRules.value.replace(/\s+/g, " ").trim().slice(0, MAX_EXTRA_RULES)
@@ -33,8 +35,38 @@ export function renderSettings() {
   });
   $("settings-reset").addEventListener("click", () => {
     if (!window.confirm("¿Volver a las listas originales y borrar tus reglas propias?")) return;
-    S.aiSettings = { foodsCommon: null, foodsAvoid: null, extraRules: "" };
+    S.aiSettings = { ...S.aiSettings, foodsCommon: null, foodsAvoid: null, extraRules: "" };
     queueSave(); renderSettings(); toast("Se restauraron las listas originales.");
   });
+  renderMealBank(root);
   renderAiPanels(root);
 }
+
+/** «Mis comidas»: comidas propias que la IA usa como base antes de inventar. Una por renglón, por tipo de comida. */
+function renderMealBank(root) {
+  const bank = S.aiSettings.mealBank || {};
+  const total = Object.values(bank).reduce((sum, list) => sum + list.length, 0);
+  const form = document.createElement("form");
+  form.id = "meal-bank-form"; form.className = "form-card settings-form ai-panel";
+  form.innerHTML = `<h2>Mis comidas</h2><p class="metric-caption">Escribí tus propias comidas, una por renglón, en el tipo que corresponda. Al armar un menú, la IA las usa como base antes de inventar otras, y siempre se descartan las que chocan con las alergias, los alimentos evitados o la cocina de cada persona. ${total ? `Tenés ${total} guardadas.` : "Todavía no cargaste ninguna."} También podés guardar una comida desde un plan con «☆ Guardar en mis comidas».</p>`
+    + MEAL_SLOTS.map(([key, label]) => `<label>${label}<textarea name="${key}" rows="3" placeholder="Ejemplo: ${EXAMPLES[key]}">${escapeHTML((bank[key] || []).join("\n"))}</textarea></label>`).join("")
+    + `<span class="optional">Hasta ${MAX_BANK_MEALS_PER_SLOT} por tipo, de hasta ${MAX_BANK_MEAL_LENGTH} letras cada una. Escribilas en medidas caseras, como en un plan.</span>`
+    + `<div class="settings-actions"><button class="button button-primary" type="submit">Guardar mis comidas</button></div>`;
+  form.addEventListener("submit", event => {
+    event.preventDefault();
+    const next = {};
+    for (const [key] of MEAL_SLOTS) next[key] = lines(form.elements[key].value);
+    S.aiSettings = { ...S.aiSettings, mealBank: cleanMealBank(next) };
+    queueSave(); renderSettings(); toast("Mis comidas guardadas. La IA las va a usar como base en los próximos menús.");
+  });
+  root.append(form);
+}
+
+const EXAMPLES = {
+  breakfast: "Mate cocido con 2 tostadas con queso untable y una fruta",
+  snack1: "1 banana",
+  lunch: "Guiso de lentejas con arroz y ensalada de tomate",
+  snack2: "Yogur con una fruta picada y 2 cucharadas de cereales",
+  merienda: "Té con leche y un sándwich de queso y tomate",
+  dinner: "Tortilla de verduras al horno con ensalada de lechuga"
+};

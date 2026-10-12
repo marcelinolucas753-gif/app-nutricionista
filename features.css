@@ -137,3 +137,29 @@
   .top-date { display: none; }
   .page-wrap { padding-left: 16px; padding-right: 16px; }
 }
+
+/* Informe de evolución (se arma al imprimir; en pantalla no se ve) */
+.print-report { display: none; }
+.print-report, .report-document {
+  /* Siempre con los colores del tema claro: el papel es blanco aunque el equipo use modo oscuro */
+  --text-main: #101c18; --text-secondary: #4a5c55; --border: #d5ddd9; --primary: #14694f; --bg-panel: #fff; --bg-hover: #eef2f0;
+  color: #101c18; font-family: var(--font-sans);
+}
+.report-document header { border-bottom: 2px solid #101c18; margin-bottom: 20px; padding-bottom: 10px; }
+.report-document h1 { margin: 0 0 6px; font-size: 26px; }
+.report-document h2 { margin: 22px 0 8px; font-size: 18px; }
+.report-document h3 { margin: 12px 0 4px; font-size: 14px; }
+.report-document ul { margin: 0 0 12px; padding-left: 20px; line-height: 1.5; }
+.report-summary { font-size: 14px; line-height: 1.5; }
+.report-chart { margin: 14px 0; break-inside: avoid; }
+.report-chart figcaption { font-weight: 700; font-size: 13px; margin-bottom: 4px; }
+.report-chart svg { width: 100%; height: auto; max-height: 230px; }
+.report-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+.report-table th, .report-table td { border: 1px solid #ccd5d1; padding: 6px 8px; text-align: left; }
+.report-table th { background: #eef2f0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.report-table tr { break-inside: avoid; }
+.report-document footer { break-inside: avoid; margin-top: 24px; padding-top: 10px; border-top: 1px solid #ccd5d1; font-size: 11px; color: #4a5c55; }
+@media print {
+  body.printing-report > *:not(#print-report-area) { display: none !important; }
+  body.printing-report #print-report-area { display: block !important; background: #fff; }
+}

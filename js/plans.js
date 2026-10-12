@@ -3,7 +3,8 @@ import { S, ensureSaved, queueSave } from "./state.js";
 import { draftFromTemplate, hasDeclaredAllergies, logHistory, makeTemplate, uid } from "./logic.js";
 import { bindFeedback, feedbackHTML } from "./feedback.js";
 import { QUICK_OPTIONS, buildReplaceInstruction } from "./meal-options.js";
-import { analyzeDraft, analyzeText, describeConflict, hasAllergyConflicts, hasExactNutritionAmounts } from "../safety.mjs";
+import { analyzeDraft, analyzeText, describeConflict, hasAllergyConflicts, hasExactNutritionAmounts, normalizeText } from "../safety.mjs";
+import { MAX_BANK_MEALS_PER_SLOT, MAX_BANK_MEAL_LENGTH, cleanMealBank, isFreeMeal } from "../menu-rules.mjs";
 import { buildShoppingMessage, whatsappLink } from "../contact.mjs";
 import { calculatePatientRequirements, derivePortionGuidance } from "../nutrition.mjs";
 
@@ -67,7 +68,7 @@ function recipesHTML(person, printable = false) {
 function draftHTML(person, conflicts) {
   const marked = new Set(conflicts.map(conflictKey));
   const draft = person.draft;
-  const days = draft.days.map((day, index) => `<details class="day-card" ${index === 0 || conflicts.some(item => item.dayIndex === index) ? "open" : ""}><summary><h3>${escapeHTML(day.day || DAYS[index])}</h3></summary><div class="meals-grid">${MEALS.map(([key, title]) => `<div class="meal-edit ${marked.has(`${index}:${key}`) ? "has-conflict" : ""}"><label>${title}<textarea data-day="${index}" data-meal="${key}" rows="3">${escapeHTML(day[key] || "")}</textarea></label><div class="ai-actions no-print"><button type="button" class="button button-quiet" data-ai-meal="replace">Reemplazar comida</button><button type="button" class="button button-quiet" data-ai-meal="recipe">Crear receta</button><button type="button" class="button button-quiet" data-ai-meal="substitute">Sugerir sustituciones</button>${feedbackHTML("meal", key)}</div><div class="ai-result hidden"></div></div>`).join("")}</div>${day.extra ? `<div class="metric-caption extra-line ${marked.has(`${index}:extra`) ? "has-conflict" : ""}">Alternativa: ${escapeHTML(day.extra)}</div>` : ""}</details>`).join("");
+  const days = draft.days.map((day, index) => `<details class="day-card" ${index === 0 || conflicts.some(item => item.dayIndex === index) ? "open" : ""}><summary><h3>${escapeHTML(day.day || DAYS[index])}</h3></summary><div class="meals-grid">${MEALS.map(([key, title]) => `<div class="meal-edit ${marked.has(`${index}:${key}`) ? "has-conflict" : ""}"><label>${title}<textarea data-day="${index}" data-meal="${key}" rows="3">${escapeHTML(day[key] || "")}</textarea></label><div class="ai-actions no-print"><button type="button" class="button button-quiet" data-ai-meal="replace">Reemplazar comida</button><button type="button" class="button button-quiet" data-ai-meal="recipe">Crear receta</button><button type="button" class="button button-quiet" data-ai-meal="substitute">Sugerir sustituciones</button><button type="button" class="button button-quiet" data-ai-meal="bank" title="La IA va a usar esta comida como base en próximos menús">☆ Guardar en mis comidas</button>${feedbackHTML("meal", key)}</div><div class="ai-result hidden"></div></div>`).join("")}</div>${day.extra ? `<div class="metric-caption extra-line ${marked.has(`${index}:extra`) ? "has-conflict" : ""}">Alternativa: ${escapeHTML(day.extra)}</div>` : ""}</details>`).join("");
   return `<div class="draft-intro">${escapeHTML(draft.intro || "Propuesta semanal orientativa, pendiente de revisión clínica.")}</div><div class="plan-feedback no-print"><small>¿Te sirve esta propuesta?</small> ${feedbackHTML("plan")}</div><div class="draft-week">${days}</div><section class="recommendations"><h3>Recomendaciones para conversar</h3><ul>${(draft.recommendations || []).map(item => `<li>${escapeHTML(item)}</li>`).join("")}</ul></section><section class="review-notes"><h3>Para revisar antes de compartir</h3><ul>${(draft.reviewNotes || ["Validá que el borrador sea apropiado para esta persona."]).map(item => `<li>${escapeHTML(item)}</li>`).join("")}</ul></section>`;
 }
 
@@ -162,7 +163,20 @@ function askReplaceOptions(box, onConfirm) {
   box.querySelector("[data-quick-cancel]").addEventListener("click", () => { box.textContent = ""; box.classList.add("hidden"); });
 }
 
+/** Guarda la comida tal como está escrita en el banco de comidas propias (Ajustes de la IA). */
+function saveToMealBank(button) {
+  const area = button.closest(".meal-edit").querySelector("textarea"), slot = area.dataset.meal;
+  const text = area.value.replace(/\s+/g, " ").trim().slice(0, MAX_BANK_MEAL_LENGTH);
+  if (!text || isFreeMeal(text)) { toast("Esta comida no se puede guardar: está vacía o es la pauta libre del fin de semana."); return; }
+  const current = S.aiSettings.mealBank?.[slot] || [];
+  if (current.some(item => normalizeText(item) === normalizeText(text))) { toast("Esa comida ya está en «Mis comidas»."); return; }
+  if (current.length >= MAX_BANK_MEALS_PER_SLOT) { toast(`Ya tenés ${MAX_BANK_MEALS_PER_SLOT} comidas de este tipo. Borrá alguna en Ajustes de la IA > Mis comidas.`); return; }
+  S.aiSettings = { ...S.aiSettings, mealBank: cleanMealBank({ ...(S.aiSettings.mealBank || {}), [slot]: [...current, text] }) };
+  queueSave(); toast("Guardada en «Mis comidas». La IA la va a tener como base en los próximos menús (podés verla o borrarla en Ajustes de la IA).");
+}
+
 function mealAction(person, button, rerender) {
+  if (button.dataset.aiMeal === "bank") return saveToMealBank(button);
   if (button.dataset.aiMeal !== "replace") return runMealAction(person, button, rerender);
   askReplaceOptions(button.closest(".meal-edit").querySelector(".ai-result"), instruction => runMealAction(person, button, rerender, instruction));
 }

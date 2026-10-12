@@ -10,8 +10,8 @@
   <meta name="description" content="Organizá borradores de menús semanales para tus prácticas clínicas." />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="/icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="/styles.css?v=17" />
-  <link rel="stylesheet" href="/features.css?v=17" />
+  <link rel="stylesheet" href="/styles.css?v=18" />
+  <link rel="stylesheet" href="/features.css?v=18" />
   <title>Nutri Guía Clínica</title>
 </head>
 <body>
@@ -34,6 +34,7 @@
         <section class="welcome"><div><div class="eyebrow"><span class="sparkle">✳</span> TU ESPACIO DE PRÁCTICA</div><h1 id="welcome-title">Hola <span class="wave">✳</span></h1><p>Un lugar simple para pensar planes de alimentación más cercanos a cada persona.</p></div><div class="welcome-illustration" aria-hidden="true"><div class="sun"></div><div class="bowl">◡<span>✿</span></div><div class="leaf leaf-a">⌁</div><div class="leaf leaf-b">⌁</div></div></section>
         <section class="metrics"><article class="metric-card"><div class="metric-icon mint">♧</div><div><div class="metric-label">PACIENTES ACTIVOS</div><div class="metric-number" id="home-count">0</div><div class="metric-caption">fichas en tu cuenta</div></div></article><article class="metric-card"><div class="metric-icon peach">▤</div><div><div class="metric-label">PLANES CREADOS</div><div class="metric-number" id="plan-count">0</div><div class="metric-caption">borradores para revisar</div></div></article><article class="metric-card"><div class="metric-icon lilac">✳</div><div><div class="metric-label">CONTROLES PRÓXIMOS</div><div class="metric-number" id="followup-count">0</div><div class="metric-caption">en los próximos 30 días</div></div></article></section>
         <section class="recent-section"><div class="section-heading"><div><h2>Próximos turnos</h2><p>Agenda de los próximos días.</p></div><button class="text-button" data-page="agenda">Abrir agenda →</button></div><div id="home-appointments" class="appointment-list"></div></section>
+        <section class="recent-section" id="home-reminders-section"><div class="section-heading"><div><h2>Avisos por hacer</h2><p>Turnos de las próximas 48 horas sin aviso y controles vencidos. Se abre WhatsApp con el mensaje armado; el envío lo hacés vos.</p></div></div><div id="home-reminders" class="appointment-list"></div></section>
         <section class="recent-section"><div class="section-heading"><div><h2>Requieren atención</h2><p>Controles vencidos y fichas sin consultas registradas.</p></div></div><div id="attention-list" class="recent-list"></div></section>
         <section class="section-heading"><div><h2>Empezá por acá</h2><p>Elegí qué necesitás hacer hoy.</p></div></section>
         <section class="action-grid"><button class="action-card primary-action" id="add-patient"><span class="action-icon">＋</span><span><strong>Agregar paciente</strong><small>Cargá sus preferencias, objetivos y contexto.</small></span><span class="action-arrow">↗</span></button><button class="action-card" id="view-patients"><span class="action-icon outline-icon">☷</span><span><strong>Ver mis pacientes</strong><small>Volvé a una ficha o a un borrador anterior.</small></span><span class="action-arrow">↗</span></button></section>
@@ -52,6 +53,6 @@
   <dialog id="password-dialog" class="password-dialog"><form id="password-form" method="dialog" class="login-card"><h2>Cambiar contraseña</h2><label for="pw-current">Contraseña actual</label><input id="pw-current" name="currentPassword" type="password" required autocomplete="current-password" /><label for="pw-new">Contraseña nueva (mínimo 12 caracteres)</label><input id="pw-new" name="newPassword" type="password" required minlength="12" autocomplete="new-password" /><label for="pw-confirm">Repetí la contraseña nueva</label><input id="pw-confirm" name="confirmPassword" type="password" required minlength="12" autocomplete="new-password" /><div class="form-actions"><button type="button" class="button button-quiet" id="password-cancel">Cancelar</button><button type="submit" class="button button-primary">Guardar</button></div><div id="password-error" role="alert" class="login-error"></div></form></dialog>
   <nav class="mobile-bottom-nav" aria-label="Accesos rápidos"><button type="button" data-page="home"><span>⌂</span>Inicio</button><button type="button" data-page="agenda"><span>▦</span>Agenda</button><button type="button" data-page="patients"><span>♧</span>Pacientes</button><button type="button" id="mobile-add"><span>＋</span>Nueva ficha</button></nav>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script type="module" src="/app.js?v=17"></script>
+  <script type="module" src="/app.js?v=18"></script>
 </body>
 </html>

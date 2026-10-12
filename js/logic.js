@@ -145,3 +145,59 @@ export function backupAdvice(status, now = Date.now()) {
 export function hasDeclaredAllergies(patient) {
   return Boolean(String(patient?.allergies ?? "").trim());
 }
+
+// ---------- Avisos pendientes (Inicio) ----------
+const CLOSED_APPOINTMENT = ["cancelled", "completed", "noShow"];
+const isOpenAppointment = item => !CLOSED_APPOINTMENT.includes(item?.status);
+
+/** Turnos abiertos que empiezan dentro de las próximas `hours` horas y todavía no tienen aviso enviado. */
+export function appointmentsNeedingReminder(appointments, now = Date.now(), hours = 48) {
+  const limit = now + hours * 3_600_000;
+  return (Array.isArray(appointments) ? appointments : [])
+    .filter(item => isOpenAppointment(item) && !item.reminderSentAt && Number.isFinite(Date.parse(item.start)) && Date.parse(item.start) >= now && Date.parse(item.start) <= limit)
+    .sort((a, b) => Date.parse(a.start) - Date.parse(b.start));
+}
+
+/**
+ * Personas con el control vencido: la fecha de «próximo control» más lejana que anotó ya pasó
+ * y no tienen ningún turno futuro. `today` es la fecha de hoy (AAAA-MM-DD).
+ */
+export function overdueControls(patients, appointments, today, now = Date.now()) {
+  const list = Array.isArray(appointments) ? appointments : [];
+  return (Array.isArray(patients) ? patients : []).filter(person => !person.archivedAt).flatMap(person => {
+    const dates = (person.consultations || []).map(item => item?.nextControl).filter(date => typeof date === "string" && ISO_DATE.test(date)).sort();
+    const due = dates.at(-1);
+    if (!due || due >= today) return [];
+    const hasFutureAppointment = list.some(item => item.patientId === person.id && isOpenAppointment(item) && Date.parse(item.start) >= now);
+    return hasFutureAppointment ? [] : [{ person, due, reminderSentAt: person.controlReminder?.due === due ? person.controlReminder.at || null : null }];
+  }).sort((a, b) => a.due.localeCompare(b.due));
+}
+
+// ---------- Informe de evolución para la persona (se imprime / guarda como PDF) ----------
+const MAX_REPORT_ROWS = 40;
+
+/**
+ * Qué lleva el informe. Es lo que la persona puede ver: mediciones, metas marcadas como visibles y las
+ * recomendaciones del plan aprobado. Nunca notas de consultas, historial, resúmenes de IA ni alergias.
+ */
+export function buildProgressReport(patient, { name = "", professionalName = "", today = "" } = {}) {
+  const series = measurementSeries(patient);
+  const byDate = new Map();
+  for (const item of [...(patient?.measurements || [])].sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")) || (Number(a.createdAt) || 0) - (Number(b.createdAt) || 0))) {
+    if (!ISO_DATE.test(String(item.date))) continue;
+    const row = byDate.get(item.date) || { date: item.date, weight: null, height: null, waist: null, hip: null };
+    for (const key of ["weight", "height", "waist", "hip"]) { const value = Number(item[key]); if (Number.isFinite(value) && value > 0) row[key] = value; }
+    byDate.set(item.date, row);
+  }
+  const rows = [...byDate.values()].filter(row => row.weight || row.height || row.waist || row.hip).slice(-MAX_REPORT_ROWS);
+  const visibleGoals = (patient?.goals || []).filter(goal => goal?.visibleToPatient === true && typeof goal.text === "string" && goal.text.trim());
+  const recommendations = patient?.approvedAt && Array.isArray(patient?.draft?.recommendations)
+    ? patient.draft.recommendations.filter(item => typeof item === "string" && item.trim()).slice(0, 10) : [];
+  return {
+    name: String(name || patient?.name || "").trim(), professionalName: String(professionalName || "").trim(), generatedOn: today,
+    series, rows, change: weightChange(patient),
+    goals: { active: visibleGoals.filter(goal => goal.status === "active" || !goal.status), achieved: visibleGoals.filter(goal => goal.status === "achieved") },
+    recommendations,
+    hasContent: rows.length > 0 || visibleGoals.length > 0 || recommendations.length > 0
+  };
+}

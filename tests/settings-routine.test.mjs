@@ -24,7 +24,7 @@ const patient = (extra = {}) => ({ age: 40, condition: "general", goal: "Ordenar
 
 // --- Ajustes editables ---------------------------------------------------------------------------
 test("cleanAiSettings limpia listas, descarta lo que no es texto y recorta", () => {
-  assert.deepEqual(cleanAiSettings(null), { foodsCommon: null, foodsAvoid: null, extraRules: "" });
+  assert.deepEqual(cleanAiSettings(null), { foodsCommon: null, foodsAvoid: null, extraRules: "", mealBank: null });
   const clean = cleanAiSettings({ foodsCommon: ["  pan   y  queso ", "pan y queso", "", 5, null, "a".repeat(500)], foodsAvoid: "no es lista", extraRules: "x".repeat(2000) });
   assert.equal(clean.foodsCommon.length, 2);
   assert.equal(clean.foodsCommon[0], "pan y queso");
@@ -51,7 +51,7 @@ test("resolveMenuSettings usa las listas originales si no hay propias y saca lo 
 test("el servidor limpia los ajustes y conserva los guardados si una versión vieja de la app no los manda", () => {
   const base = { patients: [], appointments: [] };
   assert.equal("aiSettings" in validatedDocument(base), false);
-  assert.deepEqual(validatedDocument({ ...base, aiSettings: { foodsCommon: ["pan"], extraRules: "  hola  " } }).aiSettings, { foodsCommon: ["pan"], foodsAvoid: null, extraRules: "hola" });
+  assert.deepEqual(validatedDocument({ ...base, aiSettings: { foodsCommon: ["pan"], extraRules: "  hola  " } }).aiSettings, { foodsCommon: ["pan"], foodsAvoid: null, extraRules: "hola", mealBank: null });
 });
 
 test("el menú semanal y el reemplazo usan los ajustes propios", async () => {

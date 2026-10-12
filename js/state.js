@@ -6,7 +6,7 @@ const LEGACY_DONE_KEY = "nutri-guia-cloud-import-confirmed-v1";
 
 /** Estado compartido de la app. Las pantallas lo leen y llaman a `queueSave()` después de cambiarlo. */
 export const S = {
-  patients: [], appointments: [], templates: [], aiSettings: { foodsCommon: null, foodsAvoid: null, extraRules: "" },
+  patients: [], appointments: [], templates: [], aiSettings: { foodsCommon: null, foodsAvoid: null, extraRules: "", mealBank: null },
   version: 0, authenticated: false, professional: null, backup: null,
   dirty: false, saving: false, dismissedRemote: 0, saveTimer: null, retryTimer: null
 };
@@ -79,7 +79,7 @@ export async function loadCloudData() {
   S.patients = Array.isArray(body.patients) ? body.patients : [];
   S.appointments = Array.isArray(body.appointments) ? body.appointments : [];
   S.templates = Array.isArray(body.templates) ? body.templates : [];
-  S.aiSettings = { foodsCommon: body.aiSettings?.foodsCommon || null, foodsAvoid: body.aiSettings?.foodsAvoid || null, extraRules: body.aiSettings?.extraRules || "" };
+  S.aiSettings = { foodsCommon: body.aiSettings?.foodsCommon || null, foodsAvoid: body.aiSettings?.foodsAvoid || null, extraRules: body.aiSettings?.extraRules || "", mealBank: body.aiSettings?.mealBank || null };
   S.version = Number(body.version) || 0;
   await offerLegacyImport();
   hooks.rerender();
