@@ -307,7 +307,7 @@ textarea { resize: vertical; line-height: 1.5; }
 /* PRINT */
 @media print {
   body { background: white !important; color: black !important; }
-  .sidebar, .topbar, .no-print, .mobile-bottom-nav, .detail-actions, .detail-tabs { display: none !important; }
+  .sidebar, .topbar, .no-print, .mobile-bottom-nav, .detail-actions, .detail-tabs, .toast { display: none !important; }
   .main-area { margin: 0; }
   .page-wrap { padding: 0; max-width: 100%; }
   #print-plan { display: block !important; }

@@ -1,5 +1,5 @@
-const CACHE = "nutri-guia-v18";
-const FILES = ["/", "/portal.html", "/styles.css?v=18", "/features.css?v=18", "/app.js?v=18", "/portal.js", "/nutrition.mjs", "/safety.mjs", "/menu-rules.mjs", "/contact.mjs", "/charts.mjs",
+const CACHE = "nutri-guia-v19";
+const FILES = ["/", "/portal.html", "/styles.css?v=19", "/features.css?v=19", "/app.js?v=19", "/portal.js", "/nutrition.mjs", "/safety.mjs", "/menu-rules.mjs", "/contact.mjs", "/charts.mjs",
   "/js/util.js", "/js/state.js", "/js/nav.js", "/js/logic.js", "/js/agenda.js", "/js/patients.js", "/js/detail.js", "/js/plans.js", "/js/settings.js", "/js/feedback.js", "/js/ai-review.js", "/js/report.js", "/js/meal-options.js", "/js/auth.js",
   "/manifest.webmanifest", "/icon.svg", "/icon-192.png", "/icon-512.png"];
 

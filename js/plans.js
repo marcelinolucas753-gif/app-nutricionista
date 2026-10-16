@@ -244,6 +244,7 @@ async function printPlan(person, el, rerender) {
   const images = [...area.querySelectorAll("img")];
   await Promise.race([Promise.all(images.map(image => image.complete ? Promise.resolve() : new Promise(resolve => { image.onload = resolve; image.onerror = resolve; }))), new Promise(resolve => setTimeout(resolve, 3500))]);
   window.addEventListener("afterprint", () => { area.innerHTML = ""; }, { once: true });
+  document.getElementById("toast")?.classList.remove("show");
   window.print();
 }
 
