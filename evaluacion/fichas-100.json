@@ -1,0 +1,2954 @@
+[
+ {
+  "id": "t001",
+  "name": "Prueba 001",
+  "age": 45,
+  "condition": "general",
+  "goal": "Mejorar hábitos de merienda y colaciones",
+  "likes": "sopa, puré",
+  "avoids": "",
+  "allergies": "",
+  "budget": "economico",
+  "schedule": "Trabaja desde casa",
+  "lunchPlace": "home",
+  "cookingTime": "",
+  "kitchen": [
+   "microwave"
+  ],
+  "context": "",
+  "equationSex": "female",
+  "activityLevel": "moderate",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 63.7,
+    "height": 167,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t002",
+  "name": "Prueba 002",
+  "age": 21,
+  "condition": "general",
+  "goal": "Mejorar la energía durante el día",
+  "likes": "",
+  "avoids": "",
+  "allergies": "",
+  "budget": "flexible",
+  "schedule": "Vendedora ambulante, come en la calle",
+  "lunchPlace": "work_microwave",
+  "cookingTime": "",
+  "kitchen": [],
+  "context": "",
+  "equationSex": "female",
+  "activityLevel": "moderate",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 52.5,
+    "height": 152,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t003",
+  "name": "Prueba 003",
+  "age": 45,
+  "condition": "hipertension",
+  "goal": "Mejorar la alimentación para la presión",
+  "likes": "guiso de lentejas, polenta",
+  "avoids": "",
+  "allergies": "",
+  "budget": "flexible",
+  "schedule": "Jubilado, está en su casa",
+  "lunchPlace": "outside",
+  "cookingTime": "medio",
+  "kitchen": [
+   "oven",
+   "microwave",
+   "airfryer"
+  ],
+  "context": "",
+  "equationSex": "female",
+  "activityLevel": "sedentary",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 86.2,
+    "height": 171,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t004",
+  "name": "Prueba 004",
+  "age": 68,
+  "condition": "diabetes2",
+  "goal": "Reducir la hemoglobina glicosilada",
+  "likes": "",
+  "avoids": "lácteos",
+  "allergies": "mariscos, celíaco, sin TACC",
+  "budget": "flexible",
+  "schedule": "Trabaja en el campo",
+  "lunchPlace": "work_basic",
+  "cookingTime": "poco",
+  "kitchen": [
+   "airfryer"
+  ],
+  "context": "",
+  "equationSex": "female",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 75.4,
+    "height": 170,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t005",
+  "name": "Prueba 005",
+  "age": 22,
+  "condition": "general",
+  "goal": "Ordenar horarios y comer más variado",
+  "likes": "tortilla de papa, ensaladas",
+  "avoids": "alimentos con soja",
+  "allergies": "",
+  "budget": "flexible",
+  "schedule": "Ama de casa",
+  "lunchPlace": "work_microwave",
+  "cookingTime": "",
+  "kitchen": [
+   "microwave",
+   "airfryer"
+  ],
+  "context": "Hace las compras una vez por semana.",
+  "equationSex": "male",
+  "activityLevel": "sedentary",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 90.2,
+    "height": 167,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t006",
+  "name": "Prueba 006",
+  "age": 56,
+  "condition": "ambas",
+  "goal": "Bajar de peso y controlar glucemia y presión",
+  "likes": "empanadas, pizza",
+  "avoids": "",
+  "allergies": "alergia a la avellana",
+  "budget": "flexible",
+  "schedule": "Camionero, come en rutas",
+  "lunchPlace": "home",
+  "cookingTime": "",
+  "kitchen": [
+   "oven",
+   "microwave"
+  ],
+  "context": "Le cuesta cocinar entre semana.",
+  "equationSex": "male",
+  "activityLevel": "moderate",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 72.6,
+    "height": 162,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t007",
+  "name": "Prueba 007",
+  "age": 23,
+  "condition": "ambas",
+  "goal": "Control general de diabetes e hipertensión",
+  "likes": "fideos con tuco, pan casero",
+  "avoids": "picante",
+  "allergies": "",
+  "budget": "medio",
+  "schedule": "Turno noche en un hospital",
+  "lunchPlace": "work_basic",
+  "cookingTime": "poco",
+  "kitchen": [
+   "oven",
+   "microwave",
+   "airfryer"
+  ],
+  "context": "Embarazada de 28 semanas.",
+  "equationSex": "female",
+  "activityLevel": "moderate",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 64,
+    "height": 156,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t008",
+  "name": "Prueba 008",
+  "age": 31,
+  "condition": "general",
+  "goal": "Bajar de peso",
+  "likes": "sopa, puré",
+  "avoids": "",
+  "allergies": "",
+  "budget": "economico",
+  "schedule": "Estudia a la mañana",
+  "lunchPlace": "work_microwave",
+  "cookingTime": "mucho",
+  "kitchen": [
+   "oven"
+  ],
+  "context": "Lactancia exclusiva, bebé de 3 meses.",
+  "equationSex": "female",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 78.8,
+    "height": 158,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t009",
+  "name": "Prueba 009",
+  "age": 42,
+  "condition": "general",
+  "goal": "Mejorar hábitos de merienda y colaciones",
+  "likes": "asado, ensalada",
+  "avoids": "",
+  "allergies": "",
+  "budget": "flexible",
+  "schedule": "Ama de casa",
+  "lunchPlace": "work_microwave",
+  "cookingTime": "poco",
+  "kitchen": [
+   "oven",
+   "microwave",
+   "airfryer"
+  ],
+  "context": "",
+  "equationSex": "female",
+  "activityLevel": "high",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 84.5,
+    "height": 166,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t010",
+  "name": "Prueba 010",
+  "age": 26,
+  "condition": "ambas",
+  "goal": "Bajar de peso y controlar glucemia y presión",
+  "likes": "pollo, arroz",
+  "avoids": "",
+  "allergies": "",
+  "budget": "economico",
+  "schedule": "Ama de casa",
+  "lunchPlace": "work_microwave",
+  "cookingTime": "medio",
+  "kitchen": [
+   "microwave",
+   "airfryer"
+  ],
+  "context": "Embarazada de 12 semanas.",
+  "equationSex": "female",
+  "activityLevel": "high",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 76,
+    "height": 155,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t011",
+  "name": "Prueba 011",
+  "age": 63,
+  "condition": "ambas",
+  "goal": "Bajar de peso y controlar glucemia y presión",
+  "likes": "mandioca, pescado de río",
+  "avoids": "no come carne roja",
+  "allergies": "",
+  "budget": "economico",
+  "schedule": "Jubilado, está en su casa",
+  "lunchPlace": "home",
+  "cookingTime": "",
+  "kitchen": [
+   "oven"
+  ],
+  "context": "Le cuesta cocinar entre semana.",
+  "equationSex": "male",
+  "activityLevel": "sedentary",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 84.3,
+    "height": 176,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t012",
+  "name": "Prueba 012",
+  "age": 67,
+  "condition": "general",
+  "goal": "Comer más sano en familia",
+  "likes": "mandioca, pescado de río",
+  "avoids": "no le gustan las verduras cocidas",
+  "allergies": "intolerancia a la lactosa, sésamo",
+  "budget": "economico",
+  "schedule": "Docente, dos turnos",
+  "lunchPlace": "work_basic",
+  "cookingTime": "poco",
+  "kitchen": [
+   "oven"
+  ],
+  "context": "",
+  "equationSex": "female",
+  "activityLevel": "high",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 81.2,
+    "height": 166,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t013",
+  "name": "Prueba 013",
+  "age": 57,
+  "condition": "diabetes2",
+  "goal": "Bajar de peso y controlar la glucemia",
+  "likes": "milanesa, pastas",
+  "avoids": "vegana",
+  "allergies": "",
+  "budget": "flexible",
+  "schedule": "Trabaja de tarde",
+  "lunchPlace": "work_microwave",
+  "cookingTime": "",
+  "kitchen": [
+   "microwave"
+  ],
+  "context": "",
+  "equationSex": "female",
+  "activityLevel": "sedentary",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 79,
+    "height": 169,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t014",
+  "name": "Prueba 014",
+  "age": 43,
+  "condition": "diabetes2",
+  "goal": "Mejorar el control de la glucemia",
+  "likes": "sopa, puré",
+  "avoids": "",
+  "allergies": "",
+  "budget": "economico",
+  "schedule": "Trabaja en el campo",
+  "lunchPlace": "work_basic",
+  "cookingTime": "mucho",
+  "kitchen": [
+   "oven",
+   "microwave",
+   "airfryer"
+  ],
+  "context": "",
+  "equationSex": "male",
+  "activityLevel": "moderate",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 86,
+    "height": 166,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t015",
+  "name": "Prueba 015",
+  "age": 43,
+  "condition": "diabetes2",
+  "goal": "Mejorar el control de la glucemia",
+  "likes": "mandioca, pescado de río",
+  "avoids": "",
+  "allergies": "",
+  "budget": "economico",
+  "schedule": "Trabaja de mañana",
+  "lunchPlace": "home",
+  "cookingTime": "mucho",
+  "kitchen": [
+   "microwave",
+   "airfryer"
+  ],
+  "context": "",
+  "equationSex": "female",
+  "activityLevel": "sedentary",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 74.7,
+    "height": 159,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t016",
+  "name": "Prueba 016",
+  "age": 50,
+  "condition": "diabetes2",
+  "goal": "Mejorar el control de la glucemia",
+  "likes": "tarta de verduras, arroz con pollo",
+  "avoids": "fiambres y embutidos",
+  "allergies": "",
+  "budget": "medio",
+  "schedule": "Trabaja desde casa",
+  "lunchPlace": "outside",
+  "cookingTime": "",
+  "kitchen": [
+   "microwave"
+  ],
+  "context": "",
+  "equationSex": "female",
+  "activityLevel": "sedentary",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 93.1,
+    "height": 168,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t017",
+  "name": "Prueba 017",
+  "age": 30,
+  "condition": "general",
+  "goal": "Comer más sano en familia",
+  "likes": "fideos con tuco, pan casero",
+  "avoids": "no come carne roja",
+  "allergies": "intolerancia a la fructosa",
+  "budget": "economico",
+  "schedule": "Docente, dos turnos",
+  "lunchPlace": "home",
+  "cookingTime": "",
+  "kitchen": [
+   "airfryer"
+  ],
+  "context": "Embarazada de 28 semanas.",
+  "equationSex": "female",
+  "activityLevel": "moderate",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 71.9,
+    "height": 160,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t018",
+  "name": "Prueba 018",
+  "age": 26,
+  "condition": "general",
+  "goal": "Ordenar horarios y comer más variado",
+  "likes": "guiso de lentejas, polenta",
+  "avoids": "",
+  "allergies": "maní, huevo",
+  "budget": "economico",
+  "schedule": "Ama de casa",
+  "lunchPlace": "work_microwave",
+  "cookingTime": "",
+  "kitchen": [
+   "microwave",
+   "airfryer"
+  ],
+  "context": "",
+  "equationSex": "male",
+  "activityLevel": "moderate",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 84.6,
+    "height": 166,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t019",
+  "name": "Prueba 019",
+  "age": 73,
+  "condition": "ambas",
+  "goal": "Control general de diabetes e hipertensión",
+  "likes": "tortilla de papa, ensaladas",
+  "avoids": "",
+  "allergies": "",
+  "budget": "medio",
+  "schedule": "Trabaja de 8 a 17",
+  "lunchPlace": "home",
+  "cookingTime": "medio",
+  "kitchen": [
+   "oven",
+   "microwave"
+  ],
+  "context": "",
+  "equationSex": "male",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 69.1,
+    "height": 169,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t020",
+  "name": "Prueba 020",
+  "age": 33,
+  "condition": "diabetes2",
+  "goal": "Bajar de peso y controlar la glucemia",
+  "likes": "milanesa, pastas",
+  "avoids": "vegana",
+  "allergies": "sésamo",
+  "budget": "flexible",
+  "schedule": "Ama de casa",
+  "lunchPlace": "work_microwave",
+  "cookingTime": "poco",
+  "kitchen": [
+   "oven",
+   "microwave"
+  ],
+  "context": "Está amamantando.",
+  "equationSex": "female",
+  "activityLevel": "sedentary",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 86.9,
+    "height": 169,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t021",
+  "name": "Prueba 021",
+  "age": 38,
+  "condition": "general",
+  "goal": "Mantener el peso",
+  "likes": "mandioca, pescado de río",
+  "avoids": "",
+  "allergies": "",
+  "budget": "economico",
+  "schedule": "Trabaja desde casa",
+  "lunchPlace": "home",
+  "cookingTime": "",
+  "kitchen": [],
+  "context": "",
+  "equationSex": "male",
+  "activityLevel": "sedentary",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 69.4,
+    "height": 162,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t022",
+  "name": "Prueba 022",
+  "age": 21,
+  "condition": "general",
+  "goal": "Ganar masa muscular",
+  "likes": "frutas, yogur",
+  "avoids": "sin lactosa",
+  "allergies": "",
+  "budget": "economico",
+  "schedule": "Jubilado, está en su casa",
+  "lunchPlace": "work_microwave",
+  "cookingTime": "",
+  "kitchen": [
+   "oven"
+  ],
+  "context": "",
+  "equationSex": "female",
+  "activityLevel": "high",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 71.7,
+    "height": 151,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t023",
+  "name": "Prueba 023",
+  "age": 31,
+  "condition": "hipertension",
+  "goal": "Reducir la sal",
+  "likes": "tostadas, mate cocido",
+  "avoids": "",
+  "allergies": "alergia a mariscos y pescados",
+  "budget": "economico",
+  "schedule": "Docente, dos turnos",
+  "lunchPlace": "outside",
+  "cookingTime": "poco",
+  "kitchen": [
+   "oven",
+   "microwave",
+   "airfryer"
+  ],
+  "context": "Embarazada de 34 semanas, con náuseas.",
+  "equationSex": "female",
+  "activityLevel": "moderate",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 75.9,
+    "height": 171,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t024",
+  "name": "Prueba 024",
+  "age": 25,
+  "condition": "ambas",
+  "goal": "Bajar de peso y controlar glucemia y presión",
+  "likes": "pollo, arroz",
+  "avoids": "",
+  "allergies": "",
+  "budget": "economico",
+  "schedule": "Estudia a la mañana",
+  "lunchPlace": "outside",
+  "cookingTime": "poco",
+  "kitchen": [
+   "microwave",
+   "airfryer"
+  ],
+  "context": "Corre 3 veces por semana.",
+  "equationSex": "male",
+  "activityLevel": "moderate",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 103.2,
+    "height": 187,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t025",
+  "name": "Prueba 025",
+  "age": 24,
+  "condition": "hipertension",
+  "goal": "Reducir la sal",
+  "likes": "carne al horno, papas",
+  "avoids": "",
+  "allergies": "alergia a la frutilla",
+  "budget": "economico",
+  "schedule": "Trabaja de 8 a 17",
+  "lunchPlace": "outside",
+  "cookingTime": "medio",
+  "kitchen": [
+   "oven",
+   "microwave",
+   "airfryer"
+  ],
+  "context": "En período de lactancia.",
+  "equationSex": "female",
+  "activityLevel": "high",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 69.8,
+    "height": 167,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t026",
+  "name": "Prueba 026",
+  "age": 45,
+  "condition": "general",
+  "goal": "Mejorar la energía durante el día",
+  "likes": "guiso de lentejas, polenta",
+  "avoids": "",
+  "allergies": "alergia a la proteína de la leche de vaca (APLV)",
+  "budget": "medio",
+  "schedule": "Vendedora ambulante, come en la calle",
+  "lunchPlace": "work_microwave",
+  "cookingTime": "",
+  "kitchen": [
+   "oven",
+   "microwave",
+   "airfryer"
+  ],
+  "context": "",
+  "equationSex": "female",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 96.9,
+    "height": 173,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t027",
+  "name": "Prueba 027",
+  "age": 48,
+  "condition": "diabetes2",
+  "goal": "Mejorar el control de la glucemia",
+  "likes": "mandioca, pescado de río",
+  "avoids": "no toma leche",
+  "allergies": "",
+  "budget": "economico",
+  "schedule": "Turno noche en un hospital",
+  "lunchPlace": "work_basic",
+  "cookingTime": "",
+  "kitchen": [],
+  "context": "",
+  "equationSex": "female",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 90.9,
+    "height": 164,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t028",
+  "name": "Prueba 028",
+  "age": 46,
+  "condition": "general",
+  "goal": "Mantener el peso",
+  "likes": "frutas, yogur",
+  "avoids": "cerdo",
+  "allergies": "alérgico a la leche y derivados",
+  "budget": "flexible",
+  "schedule": "Ama de casa",
+  "lunchPlace": "outside",
+  "cookingTime": "medio",
+  "kitchen": [
+   "oven",
+   "microwave"
+  ],
+  "context": "",
+  "equationSex": "male",
+  "activityLevel": "sedentary",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 68.5,
+    "height": 180,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t029",
+  "name": "Prueba 029",
+  "age": 50,
+  "condition": "diabetes2",
+  "goal": "Reducir la hemoglobina glicosilada",
+  "likes": "frutas, yogur",
+  "avoids": "vegetariana",
+  "allergies": "celiaquía",
+  "budget": "economico",
+  "schedule": "Trabaja de 8 a 17",
+  "lunchPlace": "work_basic",
+  "cookingTime": "mucho",
+  "kitchen": [
+   "microwave",
+   "airfryer"
+  ],
+  "context": "Vive sola.",
+  "equationSex": "male",
+  "activityLevel": "moderate",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 91.2,
+    "height": 163,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t030",
+  "name": "Prueba 030",
+  "age": 36,
+  "condition": "hipertension",
+  "goal": "Mejorar la alimentación para la presión",
+  "likes": "empanadas, pizza",
+  "avoids": "",
+  "allergies": "maní, huevo",
+  "budget": "economico",
+  "schedule": "Docente, dos turnos",
+  "lunchPlace": "work_basic",
+  "cookingTime": "medio",
+  "kitchen": [
+   "oven"
+  ],
+  "context": "Está amamantando.",
+  "equationSex": "female",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 93.1,
+    "height": 163,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t031",
+  "name": "Prueba 031",
+  "age": 58,
+  "condition": "general",
+  "goal": "Mantener el peso",
+  "likes": "asado, ensalada",
+  "avoids": "",
+  "allergies": "maní, huevo, intolerancia al gluten",
+  "budget": "medio",
+  "schedule": "Jubilado, está en su casa",
+  "lunchPlace": "work_microwave",
+  "cookingTime": "medio",
+  "kitchen": [
+   "oven",
+   "microwave",
+   "airfryer"
+  ],
+  "context": "",
+  "equationSex": "male",
+  "activityLevel": "high",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 92.7,
+    "height": 174,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t032",
+  "name": "Prueba 032",
+  "age": 65,
+  "condition": "hipertension",
+  "goal": "Mejorar la alimentación para la presión",
+  "likes": "tostadas, mate cocido",
+  "avoids": "ovolactovegetariano",
+  "allergies": "huevos",
+  "budget": "economico",
+  "schedule": "Vendedora ambulante, come en la calle",
+  "lunchPlace": "work_basic",
+  "cookingTime": "mucho",
+  "kitchen": [
+   "microwave"
+  ],
+  "context": "Come en familia.",
+  "equationSex": "male",
+  "activityLevel": "sedentary",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 103.6,
+    "height": 175,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t033",
+  "name": "Prueba 033",
+  "age": 60,
+  "condition": "diabetes2",
+  "goal": "Bajar de peso y controlar la glucemia",
+  "likes": "milanesa, pastas",
+  "avoids": "",
+  "allergies": "maní, huevo",
+  "budget": "economico",
+  "schedule": "Trabaja en el campo",
+  "lunchPlace": "work_basic",
+  "cookingTime": "medio",
+  "kitchen": [
+   "oven",
+   "microwave"
+  ],
+  "context": "",
+  "equationSex": "female",
+  "activityLevel": "sedentary",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 95.7,
+    "height": 174,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t034",
+  "name": "Prueba 034",
+  "age": 60,
+  "condition": "general",
+  "goal": "Bajar de peso",
+  "likes": "tarta de verduras, arroz con pollo",
+  "avoids": "",
+  "allergies": "",
+  "budget": "flexible",
+  "schedule": "Camionero, come en rutas",
+  "lunchPlace": "work_basic",
+  "cookingTime": "mucho",
+  "kitchen": [
+   "airfryer"
+  ],
+  "context": "",
+  "equationSex": "male",
+  "activityLevel": "high",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 70.3,
+    "height": 178,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t035",
+  "name": "Prueba 035",
+  "age": 53,
+  "condition": "ambas",
+  "goal": "Bajar de peso y controlar glucemia y presión",
+  "likes": "guiso de lentejas, polenta",
+  "avoids": "",
+  "allergies": "alergia a la proteína de la leche de vaca (APLV)",
+  "budget": "economico",
+  "schedule": "Jubilado, está en su casa",
+  "lunchPlace": "work_microwave",
+  "cookingTime": "mucho",
+  "kitchen": [
+   "airfryer"
+  ],
+  "context": "",
+  "equationSex": "female",
+  "activityLevel": "moderate",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 93,
+    "height": 174,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t036",
+  "name": "Prueba 036",
+  "age": 48,
+  "condition": "hipertension",
+  "goal": "Reducir la sal",
+  "likes": "empanadas, pizza",
+  "avoids": "",
+  "allergies": "maní, huevo",
+  "budget": "economico",
+  "schedule": "Docente, dos turnos",
+  "lunchPlace": "work_microwave",
+  "cookingTime": "mucho",
+  "kitchen": [
+   "oven",
+   "microwave"
+  ],
+  "context": "",
+  "equationSex": "female",
+  "activityLevel": "sedentary",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 65.5,
+    "height": 159,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t037",
+  "name": "Prueba 037",
+  "age": 54,
+  "condition": "diabetes2",
+  "goal": "Bajar de peso y controlar la glucemia",
+  "likes": "guiso de lentejas, polenta",
+  "avoids": "",
+  "allergies": "celiaquía",
+  "budget": "economico",
+  "schedule": "Trabaja en el campo",
+  "lunchPlace": "outside",
+  "cookingTime": "",
+  "kitchen": [
+   "microwave",
+   "airfryer"
+  ],
+  "context": "Come lo que cocina el comedor del trabajo.",
+  "equationSex": "male",
+  "activityLevel": "sedentary",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 70.1,
+    "height": 160,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t038",
+  "name": "Prueba 038",
+  "age": 68,
+  "condition": "general",
+  "goal": "Ordenar horarios y comer más variado",
+  "likes": "sopa, puré",
+  "avoids": "",
+  "allergies": "",
+  "budget": "economico",
+  "schedule": "Docente, dos turnos",
+  "lunchPlace": "home",
+  "cookingTime": "poco",
+  "kitchen": [
+   "microwave",
+   "airfryer"
+  ],
+  "context": "",
+  "equationSex": "female",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 55.8,
+    "height": 150,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t039",
+  "name": "Prueba 039",
+  "age": 32,
+  "condition": "general",
+  "goal": "Mejorar la energía durante el día",
+  "likes": "fideos con tuco, pan casero",
+  "avoids": "",
+  "allergies": "",
+  "budget": "flexible",
+  "schedule": "Trabaja en el campo",
+  "lunchPlace": "outside",
+  "cookingTime": "",
+  "kitchen": [],
+  "context": "",
+  "equationSex": "female",
+  "activityLevel": "sedentary",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 92.9,
+    "height": 170,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t040",
+  "name": "Prueba 040",
+  "age": 70,
+  "condition": "diabetes2",
+  "goal": "Reducir la hemoglobina glicosilada",
+  "likes": "frutas, yogur",
+  "avoids": "cebolla",
+  "allergies": "",
+  "budget": "medio",
+  "schedule": "Docente, dos turnos",
+  "lunchPlace": "home",
+  "cookingTime": "mucho",
+  "kitchen": [
+   "oven"
+  ],
+  "context": "Hace las compras una vez por semana.",
+  "equationSex": "male",
+  "activityLevel": "sedentary",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 73,
+    "height": 163,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t041",
+  "name": "Prueba 041",
+  "age": 31,
+  "condition": "general",
+  "goal": "Ganar masa muscular",
+  "likes": "verduras, huevo",
+  "avoids": "no le gusta el queso",
+  "allergies": "",
+  "budget": "economico",
+  "schedule": "Docente, dos turnos",
+  "lunchPlace": "work_basic",
+  "cookingTime": "",
+  "kitchen": [
+   "microwave",
+   "airfryer"
+  ],
+  "context": "Entrena fuerza 5 veces por semana.",
+  "equationSex": "female",
+  "activityLevel": "moderate",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 90.6,
+    "height": 174,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t042",
+  "name": "Prueba 042",
+  "age": 77,
+  "condition": "ambas",
+  "goal": "Control general de diabetes e hipertensión",
+  "likes": "fideos con tuco, pan casero",
+  "avoids": "sin lactosa",
+  "allergies": "alergia al pescado y mariscos",
+  "budget": "medio",
+  "schedule": "Jubilado, está en su casa",
+  "lunchPlace": "outside",
+  "cookingTime": "",
+  "kitchen": [],
+  "context": "",
+  "equationSex": "female",
+  "activityLevel": "moderate",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 89.4,
+    "height": 168,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t043",
+  "name": "Prueba 043",
+  "age": 68,
+  "condition": "general",
+  "goal": "Mejorar hábitos de merienda y colaciones",
+  "likes": "tostadas, mate cocido",
+  "avoids": "",
+  "allergies": "",
+  "budget": "medio",
+  "schedule": "Jubilado, está en su casa",
+  "lunchPlace": "work_microwave",
+  "cookingTime": "mucho",
+  "kitchen": [
+   "airfryer"
+  ],
+  "context": "",
+  "equationSex": "male",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 81.3,
+    "height": 167,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t044",
+  "name": "Prueba 044",
+  "age": 22,
+  "condition": "ambas",
+  "goal": "Bajar de peso y controlar glucemia y presión",
+  "likes": "milanesa, pastas",
+  "avoids": "cerdo",
+  "allergies": "",
+  "budget": "economico",
+  "schedule": "Camionero, come en rutas",
+  "lunchPlace": "work_microwave",
+  "cookingTime": "poco",
+  "kitchen": [],
+  "context": "Embarazada de 12 semanas.",
+  "equationSex": "female",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 99.5,
+    "height": 174,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t045",
+  "name": "Prueba 045",
+  "age": 47,
+  "condition": "diabetes2",
+  "goal": "Reducir la hemoglobina glicosilada",
+  "likes": "tostadas, mate cocido",
+  "avoids": "",
+  "allergies": "",
+  "budget": "economico",
+  "schedule": "Ama de casa",
+  "lunchPlace": "work_basic",
+  "cookingTime": "medio",
+  "kitchen": [
+   "microwave",
+   "airfryer"
+  ],
+  "context": "",
+  "equationSex": "female",
+  "activityLevel": "sedentary",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 101.6,
+    "height": 175,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t046",
+  "name": "Prueba 046",
+  "age": 55,
+  "condition": "ambas",
+  "goal": "Control general de diabetes e hipertensión",
+  "likes": "pollo, arroz",
+  "avoids": "",
+  "allergies": "no tolera la leche",
+  "budget": "flexible",
+  "schedule": "Trabaja de mañana",
+  "lunchPlace": "work_microwave",
+  "cookingTime": "",
+  "kitchen": [
+   "oven"
+  ],
+  "context": "",
+  "equationSex": "male",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 68.3,
+    "height": 166,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t047",
+  "name": "Prueba 047",
+  "age": 71,
+  "condition": "hipertension",
+  "goal": "Reducir la sal",
+  "likes": "empanadas, pizza",
+  "avoids": "",
+  "allergies": "",
+  "budget": "economico",
+  "schedule": "Trabaja de 8 a 17",
+  "lunchPlace": "work_basic",
+  "cookingTime": "poco",
+  "kitchen": [
+   "oven"
+  ],
+  "context": "Vive sola.",
+  "equationSex": "male",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 72.6,
+    "height": 169,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t048",
+  "name": "Prueba 048",
+  "age": 76,
+  "condition": "diabetes2",
+  "goal": "Mejorar el control de la glucemia",
+  "likes": "mandioca, pescado de río",
+  "avoids": "",
+  "allergies": "",
+  "budget": "economico",
+  "schedule": "Trabaja de mañana",
+  "lunchPlace": "home",
+  "cookingTime": "",
+  "kitchen": [
+   "microwave",
+   "airfryer"
+  ],
+  "context": "",
+  "equationSex": "male",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 88.1,
+    "height": 181,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t049",
+  "name": "Prueba 049",
+  "age": 64,
+  "condition": "general",
+  "goal": "Mejorar hábitos de merienda y colaciones",
+  "likes": "",
+  "avoids": "picante",
+  "allergies": "intolerancia al gluten",
+  "budget": "economico",
+  "schedule": "Turno noche en un hospital",
+  "lunchPlace": "outside",
+  "cookingTime": "mucho",
+  "kitchen": [
+   "oven",
+   "microwave"
+  ],
+  "context": "",
+  "equationSex": "male",
+  "activityLevel": "sedentary",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 91.6,
+    "height": 182,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t050",
+  "name": "Prueba 050",
+  "age": 28,
+  "condition": "general",
+  "goal": "Ganar masa muscular",
+  "likes": "pollo, arroz",
+  "avoids": "",
+  "allergies": "",
+  "budget": "flexible",
+  "schedule": "Trabaja de 8 a 17",
+  "lunchPlace": "work_basic",
+  "cookingTime": "medio",
+  "kitchen": [
+   "microwave"
+  ],
+  "context": "",
+  "equationSex": "male",
+  "activityLevel": "sedentary",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 62.8,
+    "height": 183,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t051",
+  "name": "Prueba 051",
+  "age": 37,
+  "condition": "hipertension",
+  "goal": "Mejorar la alimentación para la presión",
+  "likes": "mandioca, pescado de río",
+  "avoids": "",
+  "allergies": "alergia a la soja",
+  "budget": "medio",
+  "schedule": "Trabaja en el campo",
+  "lunchPlace": "work_microwave",
+  "cookingTime": "mucho",
+  "kitchen": [
+   "oven",
+   "microwave",
+   "airfryer"
+  ],
+  "context": "Come lo que cocina el comedor del trabajo.",
+  "equationSex": "male",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 72.6,
+    "height": 160,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t052",
+  "name": "Prueba 052",
+  "age": 53,
+  "condition": "hipertension",
+  "goal": "Mejorar la alimentación para la presión",
+  "likes": "sopa, puré",
+  "avoids": "no come carne roja",
+  "allergies": "pescado",
+  "budget": "medio",
+  "schedule": "Trabaja desde casa",
+  "lunchPlace": "home",
+  "cookingTime": "poco",
+  "kitchen": [
+   "microwave"
+  ],
+  "context": "",
+  "equationSex": "male",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 103.3,
+    "height": 173,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t053",
+  "name": "Prueba 053",
+  "age": 58,
+  "condition": "ambas",
+  "goal": "Bajar de peso y controlar glucemia y presión",
+  "likes": "milanesa, pastas",
+  "avoids": "evita el pollo",
+  "allergies": "huevo",
+  "budget": "economico",
+  "schedule": "Camionero, come en rutas",
+  "lunchPlace": "home",
+  "cookingTime": "poco",
+  "kitchen": [
+   "oven",
+   "microwave",
+   "airfryer"
+  ],
+  "context": "",
+  "equationSex": "female",
+  "activityLevel": "moderate",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 71.2,
+    "height": 167,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t054",
+  "name": "Prueba 054",
+  "age": 26,
+  "condition": "hipertension",
+  "goal": "Bajar de peso y controlar la presión",
+  "likes": "",
+  "avoids": "no come legumbres",
+  "allergies": "",
+  "budget": "medio",
+  "schedule": "Turno noche en un hospital",
+  "lunchPlace": "outside",
+  "cookingTime": "mucho",
+  "kitchen": [],
+  "context": "Está amamantando.",
+  "equationSex": "female",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 88.8,
+    "height": 159,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t055",
+  "name": "Prueba 055",
+  "age": 41,
+  "condition": "general",
+  "goal": "Mejorar hábitos de merienda y colaciones",
+  "likes": "sopa, puré",
+  "avoids": "no come legumbres",
+  "allergies": "",
+  "budget": "economico",
+  "schedule": "Camionero, come en rutas",
+  "lunchPlace": "home",
+  "cookingTime": "",
+  "kitchen": [
+   "oven",
+   "microwave",
+   "airfryer"
+  ],
+  "context": "",
+  "equationSex": "male",
+  "activityLevel": "sedentary",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 60.4,
+    "height": 168,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t056",
+  "name": "Prueba 056",
+  "age": 34,
+  "condition": "general",
+  "goal": "Mejorar la energía durante el día",
+  "likes": "pollo, arroz",
+  "avoids": "gluten",
+  "allergies": "",
+  "budget": "economico",
+  "schedule": "Jubilado, está en su casa",
+  "lunchPlace": "work_microwave",
+  "cookingTime": "poco",
+  "kitchen": [
+   "microwave",
+   "airfryer"
+  ],
+  "context": "Come en familia.",
+  "equationSex": "male",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 63.3,
+    "height": 183,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t057",
+  "name": "Prueba 057",
+  "age": 25,
+  "condition": "ambas",
+  "goal": "Bajar de peso y controlar glucemia y presión",
+  "likes": "mandioca, pescado de río",
+  "avoids": "",
+  "allergies": "frutos secos (nueces, almendras)",
+  "budget": "economico",
+  "schedule": "Estudia a la mañana",
+  "lunchPlace": "outside",
+  "cookingTime": "",
+  "kitchen": [
+   "microwave",
+   "airfryer"
+  ],
+  "context": "Embarazada de 8 semanas, muchas náuseas.",
+  "equationSex": "female",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 90.2,
+    "height": 173,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t058",
+  "name": "Prueba 058",
+  "age": 26,
+  "condition": "general",
+  "goal": "Bajar de peso",
+  "likes": "milanesa, pastas",
+  "avoids": "",
+  "allergies": "",
+  "budget": "medio",
+  "schedule": "Jubilado, está en su casa",
+  "lunchPlace": "work_microwave",
+  "cookingTime": "mucho",
+  "kitchen": [
+   "microwave",
+   "airfryer"
+  ],
+  "context": "",
+  "equationSex": "male",
+  "activityLevel": "high",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 59.6,
+    "height": 162,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t059",
+  "name": "Prueba 059",
+  "age": 75,
+  "condition": "ambas",
+  "goal": "Bajar de peso y controlar glucemia y presión",
+  "likes": "fideos con tuco, pan casero",
+  "avoids": "evita las frituras",
+  "allergies": "alergia a la soja",
+  "budget": "medio",
+  "schedule": "Docente, dos turnos",
+  "lunchPlace": "outside",
+  "cookingTime": "medio",
+  "kitchen": [
+   "microwave",
+   "airfryer"
+  ],
+  "context": "",
+  "equationSex": "male",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 98.8,
+    "height": 187,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t060",
+  "name": "Prueba 060",
+  "age": 21,
+  "condition": "general",
+  "goal": "Mantener el peso",
+  "likes": "",
+  "avoids": "no come carne roja",
+  "allergies": "alérgico a la leche y derivados",
+  "budget": "economico",
+  "schedule": "Trabaja de tarde",
+  "lunchPlace": "work_basic",
+  "cookingTime": "poco",
+  "kitchen": [
+   "microwave",
+   "airfryer"
+  ],
+  "context": "Entrena fuerza 5 veces por semana.",
+  "equationSex": "male",
+  "activityLevel": "moderate",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 56.2,
+    "height": 161,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t061",
+  "name": "Prueba 061",
+  "age": 59,
+  "condition": "hipertension",
+  "goal": "Bajar de peso y controlar la presión",
+  "likes": "guiso de lentejas, polenta",
+  "avoids": "no come carne roja",
+  "allergies": "huevos",
+  "budget": "economico",
+  "schedule": "Ama de casa",
+  "lunchPlace": "home",
+  "cookingTime": "medio",
+  "kitchen": [
+   "oven",
+   "microwave"
+  ],
+  "context": "",
+  "equationSex": "female",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 65.1,
+    "height": 151,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t062",
+  "name": "Prueba 062",
+  "age": 74,
+  "condition": "ambas",
+  "goal": "Control general de diabetes e hipertensión",
+  "likes": "tortilla de papa, ensaladas",
+  "avoids": "no le gustan las verduras cocidas",
+  "allergies": "alergia al trigo",
+  "budget": "economico",
+  "schedule": "Docente, dos turnos",
+  "lunchPlace": "work_basic",
+  "cookingTime": "",
+  "kitchen": [
+   "oven",
+   "microwave",
+   "airfryer"
+  ],
+  "context": "Adulto mayor, poco apetito.",
+  "equationSex": "male",
+  "activityLevel": "sedentary",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 84.6,
+    "height": 169,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t063",
+  "name": "Prueba 063",
+  "age": 71,
+  "condition": "ambas",
+  "goal": "Bajar de peso y controlar glucemia y presión",
+  "likes": "sopa, puré",
+  "avoids": "",
+  "allergies": "",
+  "budget": "economico",
+  "schedule": "Docente, dos turnos",
+  "lunchPlace": "work_basic",
+  "cookingTime": "",
+  "kitchen": [
+   "oven",
+   "microwave"
+  ],
+  "context": "",
+  "equationSex": "male",
+  "activityLevel": "sedentary",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 107.6,
+    "height": 189,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t064",
+  "name": "Prueba 064",
+  "age": 47,
+  "condition": "general",
+  "goal": "Ordenar horarios y comer más variado",
+  "likes": "guiso de lentejas, polenta",
+  "avoids": "",
+  "allergies": "",
+  "budget": "flexible",
+  "schedule": "Jubilado, está en su casa",
+  "lunchPlace": "work_microwave",
+  "cookingTime": "medio",
+  "kitchen": [
+   "oven",
+   "microwave"
+  ],
+  "context": "Hace las compras una vez por semana.",
+  "equationSex": "female",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 69.3,
+    "height": 163,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t065",
+  "name": "Prueba 065",
+  "age": 49,
+  "condition": "diabetes2",
+  "goal": "Mejorar el control de la glucemia",
+  "likes": "tostadas, mate cocido",
+  "avoids": "no come cerdo por religión",
+  "allergies": "",
+  "budget": "medio",
+  "schedule": "Trabaja de tarde",
+  "lunchPlace": "work_microwave",
+  "cookingTime": "medio",
+  "kitchen": [
+   "microwave"
+  ],
+  "context": "",
+  "equationSex": "male",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 86.6,
+    "height": 187,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t066",
+  "name": "Prueba 066",
+  "age": 61,
+  "condition": "diabetes2",
+  "goal": "Reducir la hemoglobina glicosilada",
+  "likes": "tostadas, mate cocido",
+  "avoids": "",
+  "allergies": "alergia al pescado y mariscos",
+  "budget": "medio",
+  "schedule": "Docente, dos turnos",
+  "lunchPlace": "work_basic",
+  "cookingTime": "",
+  "kitchen": [
+   "oven",
+   "microwave"
+  ],
+  "context": "",
+  "equationSex": "female",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 84.1,
+    "height": 168,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t067",
+  "name": "Prueba 067",
+  "age": 33,
+  "condition": "general",
+  "goal": "Ganar masa muscular",
+  "likes": "asado, ensalada",
+  "avoids": "",
+  "allergies": "",
+  "budget": "medio",
+  "schedule": "Vendedora ambulante, come en la calle",
+  "lunchPlace": "work_basic",
+  "cookingTime": "poco",
+  "kitchen": [
+   "microwave"
+  ],
+  "context": "Embarazada, tercer trimestre.",
+  "equationSex": "female",
+  "activityLevel": "sedentary",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 64.5,
+    "height": 168,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t068",
+  "name": "Prueba 068",
+  "age": 62,
+  "condition": "general",
+  "goal": "Mantener el peso",
+  "likes": "carne al horno, papas",
+  "avoids": "lácteos",
+  "allergies": "",
+  "budget": "flexible",
+  "schedule": "Trabaja desde casa",
+  "lunchPlace": "work_microwave",
+  "cookingTime": "mucho",
+  "kitchen": [
+   "microwave"
+  ],
+  "context": "",
+  "equationSex": "male",
+  "activityLevel": "moderate",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 73.8,
+    "height": 181,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t069",
+  "name": "Prueba 069",
+  "age": 38,
+  "condition": "general",
+  "goal": "Ganar masa muscular",
+  "likes": "tarta de verduras, arroz con pollo",
+  "avoids": "",
+  "allergies": "",
+  "budget": "economico",
+  "schedule": "Trabaja de 8 a 17",
+  "lunchPlace": "work_microwave",
+  "cookingTime": "mucho",
+  "kitchen": [],
+  "context": "",
+  "equationSex": "male",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 109.5,
+    "height": 185,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t070",
+  "name": "Prueba 070",
+  "age": 48,
+  "condition": "hipertension",
+  "goal": "Bajar de peso y controlar la presión",
+  "likes": "carne al horno, papas",
+  "avoids": "no come cerdo por religión",
+  "allergies": "",
+  "budget": "medio",
+  "schedule": "Docente, dos turnos",
+  "lunchPlace": "outside",
+  "cookingTime": "",
+  "kitchen": [
+   "oven",
+   "microwave",
+   "airfryer"
+  ],
+  "context": "Come en familia.",
+  "equationSex": "male",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 101.6,
+    "height": 184,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t071",
+  "name": "Prueba 071",
+  "age": 41,
+  "condition": "hipertension",
+  "goal": "Reducir la sal",
+  "likes": "guiso de lentejas, polenta",
+  "avoids": "no tolera el ajo ni la cebolla",
+  "allergies": "alergia al pescado y mariscos",
+  "budget": "flexible",
+  "schedule": "Vendedora ambulante, come en la calle",
+  "lunchPlace": "outside",
+  "cookingTime": "mucho",
+  "kitchen": [
+   "airfryer"
+  ],
+  "context": "",
+  "equationSex": "male",
+  "activityLevel": "moderate",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 105.2,
+    "height": 173,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t072",
+  "name": "Prueba 072",
+  "age": 26,
+  "condition": "hipertension",
+  "goal": "Mejorar la alimentación para la presión",
+  "likes": "tortilla de papa, ensaladas",
+  "avoids": "evita el pollo",
+  "allergies": "",
+  "budget": "medio",
+  "schedule": "Trabaja desde casa",
+  "lunchPlace": "work_microwave",
+  "cookingTime": "",
+  "kitchen": [
+   "oven",
+   "microwave",
+   "airfryer"
+  ],
+  "context": "Embarazada de 28 semanas.",
+  "equationSex": "female",
+  "activityLevel": "high",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 69.5,
+    "height": 154,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t073",
+  "name": "Prueba 073",
+  "age": 72,
+  "condition": "diabetes2",
+  "goal": "Bajar de peso y controlar la glucemia",
+  "likes": "empanadas, pizza",
+  "avoids": "gluten",
+  "allergies": "maní",
+  "budget": "economico",
+  "schedule": "Trabaja de tarde",
+  "lunchPlace": "outside",
+  "cookingTime": "",
+  "kitchen": [
+   "microwave"
+  ],
+  "context": "",
+  "equationSex": "female",
+  "activityLevel": "high",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 82,
+    "height": 161,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t074",
+  "name": "Prueba 074",
+  "age": 61,
+  "condition": "general",
+  "goal": "Ganar masa muscular",
+  "likes": "guiso de lentejas, polenta",
+  "avoids": "gluten",
+  "allergies": "",
+  "budget": "economico",
+  "schedule": "Docente, dos turnos",
+  "lunchPlace": "work_basic",
+  "cookingTime": "",
+  "kitchen": [
+   "oven",
+   "microwave"
+  ],
+  "context": "",
+  "equationSex": "female",
+  "activityLevel": "sedentary",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 72.9,
+    "height": 161,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t075",
+  "name": "Prueba 075",
+  "age": 68,
+  "condition": "hipertension",
+  "goal": "Mejorar la alimentación para la presión",
+  "likes": "milanesa, pastas",
+  "avoids": "",
+  "allergies": "",
+  "budget": "economico",
+  "schedule": "Vendedora ambulante, come en la calle",
+  "lunchPlace": "home",
+  "cookingTime": "mucho",
+  "kitchen": [
+   "microwave"
+  ],
+  "context": "Hace las compras una vez por semana.",
+  "equationSex": "female",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 104.6,
+    "height": 174,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t076",
+  "name": "Prueba 076",
+  "age": 31,
+  "condition": "general",
+  "goal": "Comer más sano en familia",
+  "likes": "frutas, yogur",
+  "avoids": "pescado y mariscos",
+  "allergies": "huevo",
+  "budget": "economico",
+  "schedule": "Trabaja desde casa",
+  "lunchPlace": "outside",
+  "cookingTime": "",
+  "kitchen": [
+   "oven"
+  ],
+  "context": "",
+  "equationSex": "male",
+  "activityLevel": "high",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 71.5,
+    "height": 173,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t077",
+  "name": "Prueba 077",
+  "age": 60,
+  "condition": "general",
+  "goal": "Mejorar la energía durante el día",
+  "likes": "frutas, yogur",
+  "avoids": "no come mondongo ni achuras",
+  "allergies": "",
+  "budget": "economico",
+  "schedule": "Camionero, come en rutas",
+  "lunchPlace": "home",
+  "cookingTime": "poco",
+  "kitchen": [],
+  "context": "",
+  "equationSex": "male",
+  "activityLevel": "sedentary",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 65.6,
+    "height": 177,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t078",
+  "name": "Prueba 078",
+  "age": 28,
+  "condition": "general",
+  "goal": "Mejorar la energía durante el día",
+  "likes": "asado, ensalada",
+  "avoids": "no toma leche",
+  "allergies": "intolerancia a la lactosa",
+  "budget": "medio",
+  "schedule": "Trabaja desde casa",
+  "lunchPlace": "work_basic",
+  "cookingTime": "mucho",
+  "kitchen": [
+   "microwave"
+  ],
+  "context": "",
+  "equationSex": "male",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 85.7,
+    "height": 188,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t079",
+  "name": "Prueba 079",
+  "age": 51,
+  "condition": "general",
+  "goal": "Bajar de peso",
+  "likes": "asado, ensalada",
+  "avoids": "",
+  "allergies": "frutos secos (nueces, almendras)",
+  "budget": "flexible",
+  "schedule": "Estudia a la mañana",
+  "lunchPlace": "work_basic",
+  "cookingTime": "medio",
+  "kitchen": [
+   "oven",
+   "microwave",
+   "airfryer"
+  ],
+  "context": "",
+  "equationSex": "male",
+  "activityLevel": "high",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 72.3,
+    "height": 166,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t080",
+  "name": "Prueba 080",
+  "age": 73,
+  "condition": "ambas",
+  "goal": "Control general de diabetes e hipertensión",
+  "likes": "verduras, huevo",
+  "avoids": "picante",
+  "allergies": "",
+  "budget": "economico",
+  "schedule": "Trabaja de mañana",
+  "lunchPlace": "work_microwave",
+  "cookingTime": "poco",
+  "kitchen": [],
+  "context": "Vive sola.",
+  "equationSex": "female",
+  "activityLevel": "high",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 65.8,
+    "height": 159,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t081",
+  "name": "Prueba 081",
+  "age": 71,
+  "condition": "hipertension",
+  "goal": "Reducir la sal",
+  "likes": "verduras, huevo",
+  "avoids": "no come ni carne ni pollo ni pescado",
+  "allergies": "celiaquía",
+  "budget": "flexible",
+  "schedule": "Docente, dos turnos",
+  "lunchPlace": "outside",
+  "cookingTime": "mucho",
+  "kitchen": [
+   "oven",
+   "microwave"
+  ],
+  "context": "",
+  "equationSex": "female",
+  "activityLevel": "sedentary",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 74.4,
+    "height": 152,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t082",
+  "name": "Prueba 082",
+  "age": 64,
+  "condition": "ambas",
+  "goal": "Bajar de peso y controlar glucemia y presión",
+  "likes": "tostadas, mate cocido",
+  "avoids": "",
+  "allergies": "",
+  "budget": "flexible",
+  "schedule": "Vendedora ambulante, come en la calle",
+  "lunchPlace": "outside",
+  "cookingTime": "medio",
+  "kitchen": [
+   "oven",
+   "microwave",
+   "airfryer"
+  ],
+  "context": "",
+  "equationSex": "female",
+  "activityLevel": "high",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 82.5,
+    "height": 164,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t083",
+  "name": "Prueba 083",
+  "age": 24,
+  "condition": "diabetes2",
+  "goal": "Bajar de peso y controlar la glucemia",
+  "likes": "pollo, arroz",
+  "avoids": "gluten",
+  "allergies": "sésamo, TACC",
+  "budget": "flexible",
+  "schedule": "Trabaja en el campo",
+  "lunchPlace": "work_basic",
+  "cookingTime": "poco",
+  "kitchen": [
+   "microwave",
+   "airfryer"
+  ],
+  "context": "Está amamantando.",
+  "equationSex": "female",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 63,
+    "height": 154,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t084",
+  "name": "Prueba 084",
+  "age": 72,
+  "condition": "diabetes2",
+  "goal": "Bajar de peso y controlar la glucemia",
+  "likes": "empanadas, pizza",
+  "avoids": "",
+  "allergies": "",
+  "budget": "economico",
+  "schedule": "Trabaja de 8 a 17",
+  "lunchPlace": "home",
+  "cookingTime": "mucho",
+  "kitchen": [
+   "airfryer"
+  ],
+  "context": "Hace las compras una vez por semana.",
+  "equationSex": "male",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 76.5,
+    "height": 163,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t085",
+  "name": "Prueba 085",
+  "age": 45,
+  "condition": "ambas",
+  "goal": "Control general de diabetes e hipertensión",
+  "likes": "guiso de lentejas, polenta",
+  "avoids": "cerdo",
+  "allergies": "",
+  "budget": "flexible",
+  "schedule": "Trabaja de tarde",
+  "lunchPlace": "outside",
+  "cookingTime": "mucho",
+  "kitchen": [
+   "oven",
+   "microwave",
+   "airfryer"
+  ],
+  "context": "",
+  "equationSex": "female",
+  "activityLevel": "sedentary",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 66.3,
+    "height": 154,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t086",
+  "name": "Prueba 086",
+  "age": 22,
+  "condition": "general",
+  "goal": "Ganar masa muscular",
+  "likes": "frutas, yogur",
+  "avoids": "",
+  "allergies": "",
+  "budget": "economico",
+  "schedule": "Turno noche en un hospital",
+  "lunchPlace": "home",
+  "cookingTime": "mucho",
+  "kitchen": [
+   "oven",
+   "microwave",
+   "airfryer"
+  ],
+  "context": "Le cuesta cocinar entre semana.",
+  "equationSex": "female",
+  "activityLevel": "sedentary",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 75.8,
+    "height": 162,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t087",
+  "name": "Prueba 087",
+  "age": 51,
+  "condition": "ambas",
+  "goal": "Control general de diabetes e hipertensión",
+  "likes": "sopa, puré",
+  "avoids": "",
+  "allergies": "maní, huevo",
+  "budget": "medio",
+  "schedule": "Trabaja desde casa",
+  "lunchPlace": "work_microwave",
+  "cookingTime": "medio",
+  "kitchen": [
+   "oven",
+   "microwave",
+   "airfryer"
+  ],
+  "context": "",
+  "equationSex": "male",
+  "activityLevel": "moderate",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 68.9,
+    "height": 169,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t088",
+  "name": "Prueba 088",
+  "age": 43,
+  "condition": "general",
+  "goal": "Comer más sano en familia",
+  "likes": "",
+  "avoids": "",
+  "allergies": "mariscos, alergia al kiwi y a la banana",
+  "budget": "economico",
+  "schedule": "Ama de casa",
+  "lunchPlace": "work_microwave",
+  "cookingTime": "",
+  "kitchen": [
+   "oven",
+   "microwave"
+  ],
+  "context": "",
+  "equationSex": "female",
+  "activityLevel": "high",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 75,
+    "height": 157,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t089",
+  "name": "Prueba 089",
+  "age": 30,
+  "condition": "general",
+  "goal": "Comer más sano en familia",
+  "likes": "mandioca, pescado de río",
+  "avoids": "",
+  "allergies": "maní, huevo",
+  "budget": "economico",
+  "schedule": "Trabaja en el campo",
+  "lunchPlace": "work_microwave",
+  "cookingTime": "medio",
+  "kitchen": [
+   "oven",
+   "microwave",
+   "airfryer"
+  ],
+  "context": "",
+  "equationSex": "female",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 58,
+    "height": 161,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t090",
+  "name": "Prueba 090",
+  "age": 47,
+  "condition": "hipertension",
+  "goal": "Reducir la sal",
+  "likes": "",
+  "avoids": "",
+  "allergies": "",
+  "budget": "medio",
+  "schedule": "Trabaja de tarde",
+  "lunchPlace": "work_basic",
+  "cookingTime": "medio",
+  "kitchen": [
+   "airfryer"
+  ],
+  "context": "Come lo que cocina el comedor del trabajo.",
+  "equationSex": "male",
+  "activityLevel": "high",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 87.9,
+    "height": 178,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t091",
+  "name": "Prueba 091",
+  "age": 46,
+  "condition": "diabetes2",
+  "goal": "Mejorar el control de la glucemia",
+  "likes": "mandioca, pescado de río",
+  "avoids": "sin lactosa",
+  "allergies": "celiaquía",
+  "budget": "medio",
+  "schedule": "Turno noche en un hospital",
+  "lunchPlace": "home",
+  "cookingTime": "medio",
+  "kitchen": [],
+  "context": "",
+  "equationSex": "male",
+  "activityLevel": "sedentary",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 95.4,
+    "height": 189,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t092",
+  "name": "Prueba 092",
+  "age": 75,
+  "condition": "diabetes2",
+  "goal": "Bajar de peso y controlar la glucemia",
+  "likes": "sopa, puré",
+  "avoids": "no como carne de vaca, solo pollo",
+  "allergies": "alergia a la avellana",
+  "budget": "medio",
+  "schedule": "Trabaja de 8 a 17",
+  "lunchPlace": "outside",
+  "cookingTime": "mucho",
+  "kitchen": [
+   "oven",
+   "microwave"
+  ],
+  "context": "",
+  "equationSex": "female",
+  "activityLevel": "moderate",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 66.1,
+    "height": 159,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t093",
+  "name": "Prueba 093",
+  "age": 55,
+  "condition": "ambas",
+  "goal": "Bajar de peso y controlar glucemia y presión",
+  "likes": "sopa, puré",
+  "avoids": "no como carne de vaca, solo pollo",
+  "allergies": "intolerancia a la lactosa",
+  "budget": "economico",
+  "schedule": "Trabaja en el campo",
+  "lunchPlace": "home",
+  "cookingTime": "",
+  "kitchen": [
+   "oven",
+   "microwave",
+   "airfryer"
+  ],
+  "context": "",
+  "equationSex": "male",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 91.8,
+    "height": 185,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t094",
+  "name": "Prueba 094",
+  "age": 47,
+  "condition": "hipertension",
+  "goal": "Mejorar la alimentación para la presión",
+  "likes": "frutas, yogur",
+  "avoids": "evita el pollo",
+  "allergies": "",
+  "budget": "flexible",
+  "schedule": "Trabaja en el campo",
+  "lunchPlace": "work_microwave",
+  "cookingTime": "mucho",
+  "kitchen": [],
+  "context": "Hace las compras una vez por semana.",
+  "equationSex": "male",
+  "activityLevel": "moderate",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 92.2,
+    "height": 189,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t095",
+  "name": "Prueba 095",
+  "age": 72,
+  "condition": "hipertension",
+  "goal": "Reducir la sal",
+  "likes": "guiso de lentejas, polenta",
+  "avoids": "huevo",
+  "allergies": "",
+  "budget": "medio",
+  "schedule": "Turno noche en un hospital",
+  "lunchPlace": "outside",
+  "cookingTime": "poco",
+  "kitchen": [
+   "oven",
+   "microwave",
+   "airfryer"
+  ],
+  "context": "Dificultad para masticar, usa prótesis dental.",
+  "equationSex": "female",
+  "activityLevel": "moderate",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 87.7,
+    "height": 166,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t096",
+  "name": "Prueba 096",
+  "age": 40,
+  "condition": "hipertension",
+  "goal": "Bajar de peso y controlar la presión",
+  "likes": "tarta de verduras, arroz con pollo",
+  "avoids": "",
+  "allergies": "",
+  "budget": "medio",
+  "schedule": "Camionero, come en rutas",
+  "lunchPlace": "work_basic",
+  "cookingTime": "mucho",
+  "kitchen": [],
+  "context": "Muy poco presupuesto, vive con tres hijos.",
+  "equationSex": "female",
+  "activityLevel": "sedentary",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 68.1,
+    "height": 158,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t097",
+  "name": "Prueba 097",
+  "age": 58,
+  "condition": "general",
+  "goal": "Mantener el peso",
+  "likes": "tostadas, mate cocido",
+  "avoids": "",
+  "allergies": "huevo",
+  "budget": "economico",
+  "schedule": "Vendedora ambulante, come en la calle",
+  "lunchPlace": "outside",
+  "cookingTime": "poco",
+  "kitchen": [
+   "microwave"
+  ],
+  "context": "",
+  "equationSex": "male",
+  "activityLevel": "sedentary",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 87.3,
+    "height": 177,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t098",
+  "name": "Prueba 098",
+  "age": 38,
+  "condition": "general",
+  "goal": "Mejorar hábitos de merienda y colaciones",
+  "likes": "mandioca, pescado de río",
+  "avoids": "",
+  "allergies": "",
+  "budget": "economico",
+  "schedule": "Trabaja en el campo",
+  "lunchPlace": "outside",
+  "cookingTime": "poco",
+  "kitchen": [
+   "oven",
+   "microwave",
+   "airfryer"
+  ],
+  "context": "",
+  "equationSex": "male",
+  "activityLevel": "high",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 95.8,
+    "height": 172,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t099",
+  "name": "Prueba 099",
+  "age": 79,
+  "condition": "general",
+  "goal": "Mejorar hábitos de merienda y colaciones",
+  "likes": "tortilla de papa, ensaladas",
+  "avoids": "",
+  "allergies": "alergia a la frutilla",
+  "budget": "flexible",
+  "schedule": "Estudia a la mañana",
+  "lunchPlace": "outside",
+  "cookingTime": "",
+  "kitchen": [
+   "airfryer"
+  ],
+  "context": "Adulto mayor, poco apetito.",
+  "equationSex": "female",
+  "activityLevel": "high",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 67.8,
+    "height": 164,
+    "createdAt": 1
+   }
+  ]
+ },
+ {
+  "id": "t100",
+  "name": "Prueba 100",
+  "age": 49,
+  "condition": "general",
+  "goal": "Bajar de peso",
+  "likes": "pollo, arroz",
+  "avoids": "no le gustan las verduras cocidas",
+  "allergies": "celíaco, sin TACC",
+  "budget": "medio",
+  "schedule": "Estudia a la mañana",
+  "lunchPlace": "work_basic",
+  "cookingTime": "medio",
+  "kitchen": [
+   "oven"
+  ],
+  "context": "Come en familia.",
+  "equationSex": "female",
+  "activityLevel": "light",
+  "measurements": [
+   {
+    "id": "m1",
+    "date": "2026-09-01",
+    "weight": 77.3,
+    "height": 175,
+    "createdAt": 1
+   }
+  ]
+ }
+]
